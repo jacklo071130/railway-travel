@@ -1,0 +1,6 @@
+{
+  "name": "台鐵台灣鐵道漫遊 AI 旅遊規劃專家",
+  "description": "結合台鐵時刻查詢、AI一日遊景點美食生成、詳細行程表與交通轉乘指南，並整合Google Maps定位與導航功能的台灣鐵道旅遊互動平台。",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
