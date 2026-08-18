@@ -74,6 +74,9 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
               <span className="px-2.5 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs font-semibold border border-blue-400/30">
                 {station.line}
               </span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-400/30">
+                {station.gradeLabel}
+              </span>
               <span className="text-xs text-slate-300">
                 {station.county} • 站碼: {station.id}
               </span>

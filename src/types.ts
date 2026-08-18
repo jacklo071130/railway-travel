@@ -1,3 +1,5 @@
+export type StationGrade = 'super' | 'first' | 'second' | 'third' | 'simple' | 'flag';
+
 export interface TRAStation {
   id: string;
   name: string;
@@ -5,6 +7,8 @@ export interface TRAStation {
   line: string;
   region: 'north' | 'central' | 'south' | 'east' | 'branch';
   county: string;
+  grade: StationGrade;
+  gradeLabel: string;
   lat: number;
   lng: number;
   isMainStation?: boolean;

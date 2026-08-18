@@ -37,7 +37,7 @@ export default function App() {
     findStationById('1008') || TAIWAN_TRA_STATIONS[0]
   );
   const [destinationStation, setDestinationStation] = useState<TRAStation>(
-    findStationById('1820') || TAIWAN_TRA_STATIONS[1] // 礁溪
+    findStationById('7200') || TAIWAN_TRA_STATIONS[1] // 礁溪
   );
 
   // 2. Travel Date (Tomorrow)
