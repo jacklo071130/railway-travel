@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Leaflet Container & Marker fixes */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 480px !important;
+  z-index: 1;
+  font-family: inherit;
+}
+
+.custom-station-icon,
+.custom-stop-icon,
+.custom-user-icon,
+.other-station-icon {
+  background: transparent;
+  border: none;
+}
+
 @media print {
   nav,
   #btn-save-itinerary,
