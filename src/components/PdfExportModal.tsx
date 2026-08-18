@@ -244,6 +244,38 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
               {/* Overview Summary & Metrics */}
               <div className="mt-3.5 p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                {itinerary.preferences && (
+                  <div className="flex flex-wrap items-center gap-1.5 mb-2 pb-2 border-b border-slate-200/80">
+                    <span className="font-bold text-blue-900 text-[11px]">個人化設定:</span>
+                    <span className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-800 text-[10px] font-semibold">
+                      {itinerary.preferences.style === 'gourmet' ? '🍜 美食老饕' :
+                       itinerary.preferences.style === 'instagram' ? '📸 網美打卡' :
+                       itinerary.preferences.style === 'culture' ? '🏛️ 歷史人文' :
+                       itinerary.preferences.style === 'family' ? '👨‍👩‍👧 親子同樂' :
+                       itinerary.preferences.style === 'nature' ? '🌲 自然步道' : '☕ 慢活悠閒'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-slate-200/80 text-slate-800 text-[10px] font-medium">
+                      {itinerary.preferences.companion === 'solo' ? '一人獨旅' :
+                       itinerary.preferences.companion === 'couple' ? '情侶約會' :
+                       itinerary.preferences.companion === 'family_elder' ? '長輩同行' :
+                       itinerary.preferences.companion === 'family_kids' ? '親子家庭' : '好友同行'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-slate-200/80 text-slate-800 text-[10px] font-medium">
+                      {itinerary.preferences.pace === 'relaxed' ? '慢步調' :
+                       itinerary.preferences.pace === 'packed' ? '精實踩點' : '經典適中'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-100/80 text-emerald-800 text-[10px] font-semibold">
+                      {itinerary.preferences.transport === 'walk_youbike' ? '步行+YouBike' :
+                       itinerary.preferences.transport === 'public_bus' ? '公車客運' :
+                       itinerary.preferences.transport === 'scooter_rental' ? '租機車' : '計程車'}
+                    </span>
+                    {itinerary.preferences.customNotes && (
+                      <span className="px-2 py-0.5 rounded bg-amber-100/80 text-amber-900 text-[10px] font-medium">
+                        需求: {itinerary.preferences.customNotes}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <span className="font-bold text-blue-900 mr-1">【行程亮點與特色】</span>
                 {itinerary.summary}
               </div>

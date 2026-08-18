@@ -8,7 +8,7 @@ import {
   Bookmark,
   Check,
   Copy,
-  FileDown,
+  Printer,
   Utensils,
   Camera,
   Landmark,
@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { DayItinerary, ItineraryStop } from '../types';
 import confetti from 'canvas-confetti';
-import { PdfExportModal } from './PdfExportModal';
 
 interface ItineraryViewProps {
   itinerary: DayItinerary;
@@ -41,7 +40,6 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   onSelectStopOnMap,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Normalize 3 Outbound Train Options
   const outboundList = itinerary.trainRecommendation.outboundList && itinerary.trainRecommendation.outboundList.length > 0
@@ -261,13 +259,13 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
               </button>
 
               <button
-                id="btn-export-pdf"
-                onClick={() => setIsPdfModalOpen(true)}
-                className="flex px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold border border-blue-400/40 items-center space-x-1.5 transition-all shadow-sm active:scale-95"
-                title="預覽並匯出成 PDF 文件"
+                id="btn-print-itinerary"
+                onClick={() => window.print()}
+                className="flex px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/20 items-center space-x-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                title="列印一日遊行程"
               >
-                <FileDown className="w-3.5 h-3.5 text-blue-100" />
-                <span>匯出成PDF</span>
+                <Printer className="w-3.5 h-3.5 text-blue-200" />
+                <span>列印</span>
               </button>
             </div>
           </div>
@@ -278,6 +276,43 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
           <p className="text-sm sm:text-base text-blue-200/90 font-medium mb-4 max-w-3xl">
             {itinerary.subtitle}
           </p>
+
+          {/* Active Personalized Settings Ribbon */}
+          {itinerary.preferences && (
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
+              <span className="text-[11px] text-blue-300 font-semibold flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-300" />
+                個人化依據:
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/20">
+                {itinerary.preferences.style === 'gourmet' ? '🍜 美食老饕' :
+                 itinerary.preferences.style === 'instagram' ? '📸 網美打卡' :
+                 itinerary.preferences.style === 'culture' ? '🏛️ 歷史人文' :
+                 itinerary.preferences.style === 'family' ? '👨‍👩‍👧 親子同樂' :
+                 itinerary.preferences.style === 'nature' ? '🌲 自然步道' : '☕ 慢活悠閒'}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/20">
+                {itinerary.preferences.companion === 'solo' ? '一人獨旅' :
+                 itinerary.preferences.companion === 'couple' ? '情侶約會' :
+                 itinerary.preferences.companion === 'family_elder' ? '長輩同行' :
+                 itinerary.preferences.companion === 'family_kids' ? '親子家庭' : '好友同行'}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/20">
+                {itinerary.preferences.pace === 'relaxed' ? '⏳ 慢步調(3~4點)' :
+                 itinerary.preferences.pace === 'packed' ? '🔥 精實踩點(5~6點)' : '⚡ 經典適中'}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-white/15 text-white border border-white/20">
+                {itinerary.preferences.transport === 'walk_youbike' ? '🚶 步行+YouBike' :
+                 itinerary.preferences.transport === 'public_bus' ? '🚌 在地公車/客運' :
+                 itinerary.preferences.transport === 'scooter_rental' ? '🛵 站前租機車' : '🚕 計程車包車'}
+              </span>
+              {itinerary.preferences.customNotes && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-400/20 text-amber-200 border border-amber-300/30 max-w-xs truncate">
+                  📝 「{itinerary.preferences.customNotes}」
+                </span>
+              )}
+            </div>
+          )}
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-4xl bg-white/5 p-3.5 rounded-2xl border border-white/10 mb-5">
             {itinerary.summary}
@@ -814,15 +849,6 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
           </div>
         </div>
       </div>
-
-      {/* PDF Export & Preview Modal */}
-      <PdfExportModal
-        isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
-        itinerary={itinerary}
-        selectedOutbound={activeOutbound}
-        selectedInbound={activeInbound}
-      />
     </div>
   );
 };

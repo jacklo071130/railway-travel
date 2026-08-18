@@ -135,6 +135,15 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
     }
   };
 
+  const getPaceLabel = (pace: string) => {
+    switch (pace) {
+      case 'relaxed': return '⏳ 慢步調(3~4點)';
+      case 'moderate': return '⚡ 經典適中(4~5點)';
+      case 'packed': return '🔥 精實踩點(5~6點)';
+      default: return '適中步調';
+    }
+  };
+
   const getTransportLabel = (transport: string) => {
     switch (transport) {
       case 'walk_youbike': return '🚶 步行 + YouBike';
@@ -324,16 +333,30 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
           <button
             id="btn-open-preferences"
             onClick={onOpenPreferences}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50/70 hover:bg-blue-100 text-slate-700 text-xs font-semibold border border-blue-200 transition-colors cursor-pointer"
+            title="點擊修改個人化偏好設定"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" />
-            <span>{getStyleLabel(preferences.style)}</span>
-            <span className="text-slate-400">|</span>
+            <span className="text-blue-900 font-bold">{getStyleLabel(preferences.style)}</span>
+            <span className="text-slate-300">|</span>
             <span>{getCompanionLabel(preferences.companion)}</span>
-            <span className="text-slate-400">|</span>
+            <span className="text-slate-300">|</span>
+            <span>{getPaceLabel(preferences.pace)}</span>
+            <span className="text-slate-300">|</span>
             <span>{getTransportLabel(preferences.transport)}</span>
-            <span className="text-blue-600 text-[11px] underline ml-1 font-bold">自訂設定</span>
+            <span className="text-blue-600 text-[11px] underline ml-1 font-bold">修改偏好</span>
           </button>
+
+          {preferences.customNotes && preferences.customNotes.trim() && (
+            <span 
+              onClick={onOpenPreferences}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 text-xs font-medium cursor-pointer hover:bg-amber-100 transition-colors max-w-xs truncate"
+              title={`自訂備註需求: ${preferences.customNotes}`}
+            >
+              <span>📝</span>
+              <span className="truncate">「{preferences.customNotes}」</span>
+            </span>
+          )}
         </div>
 
         {/* Generate Button */}
@@ -344,7 +367,7 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
           className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-sm sm:text-base flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 transition-all transform active:scale-98 disabled:opacity-70 cursor-pointer"
         >
           <Sparkles className={`w-5 h-5 text-amber-300 ${isLoading ? 'animate-spin' : 'animate-pulse'}`} />
-          <span>{isLoading ? 'AI 正在規劃完美一日遊行程中...' : `一鍵生成【${origin.name} ➔ ${destination.name}】一日遊詳細行程`}</span>
+          <span>{isLoading ? 'AI 正在規劃專屬個人化一日遊中...' : `一鍵生成【${origin.name} ➔ ${destination.name}】一日遊詳細行程`}</span>
         </button>
       </div>
 

@@ -135,27 +135,36 @@ app.post('/api/generate-itinerary', async (req, res) => {
       });
     }
 
+    const styleDesc = getStyleDescription(preferences?.style);
+    const companionDesc = getCompanionDescription(preferences?.companion);
+    const paceDesc = getPaceDescription(preferences?.pace);
+    const transportDesc = getTransportDescription(preferences?.transport, destination.name);
+    const customNotes = preferences?.customNotes ? preferences.customNotes.trim() : '';
+
     const systemPrompt = `你是一位精通台灣鐵路（台鐵 TRA）與台灣各縣市深度旅遊的頂級在地導遊規劃專家。
 你的任務是為旅客規劃一份從起點火車站搭乘台鐵抵達目的地火車站的「完美一日遊詳細行程表與交通指南」。
 
 請嚴格遵循以下規劃原則：
-1. 行程以目的地火車站為核心放射狀規劃，景點與美食皆須為真實存在的在地知名店家與觀光勝地。
-2. 路線順序需具備高度地理合理性（不走回頭路），明確說明由火車站出發如何轉乘（如步行、YouBike、台灣好行客運、公車）。
-3. 包含道地的火車出發與回程車次建議（如新自強3000、普悠瑪、自強號、區間快車）、台鐵便當與在地必吃名產。
-4. 每一個景點與餐廳都需提供具體的停留時間、特色介紹、推薦餐點或拍照點，以及精準的地理座標(lat, lng)與地址。
-5. 必須以繁體中文（台灣習慣用語）輸出嚴格符合 JSON Schema 的內容。`;
+1. 【個人化最高優先】：必須 100% 依據旅客設定的「旅遊風格主題」、「同行夥伴組合」、「行程節奏」、「目的地交通方式」與「自訂特殊需求備註」進行深度量身定做！行程標題、停留點、餐飲選擇、活動內容與貼心小叮嚀都必須精準體現這些個人化偏好。
+2. 行程以目的地火車站為核心放射狀規劃，景點與美食皆須為真實存在的在地知名店家與觀光勝地。
+3. 路線順序需具備高度地理合理性（不走回頭路），明確說明由火車站出發如何轉乘（如步行、YouBike、台灣好行客運、租機車、計程車）。
+4. 包含道地的火車出發與回程車次建議（如新自強3000、普悠瑪、自強號、區間快車）、台鐵便當與在地必吃名產。
+5. 每一個景點與餐廳都需提供具體的停留時間、特色介紹、推薦餐點或拍照點，以及精準的地理座標(lat, lng)與地址。
+6. 必須以繁體中文（台灣習慣用語）輸出嚴格符合 JSON Schema 的內容。`;
 
-    const userPrompt = `請為我規劃一日鐵道深度旅遊：
+    const userPrompt = `請為我規劃專屬量身定制的一日鐵道深度旅遊：
 - 出發起點火車站：${origin.name} (${origin.county})
-- 抵達目的地火車站：${destination.name} (${destination.county})，特色：${destination.description || ''}
+- 抵達目的地火車站：${destination.name} (${destination.county})，車站特色：${destination.description || ''}，在地名物特色：${(destination.popularFoods || []).join('、')} / ${(destination.popularAttractions || []).join('、')}
 - 預計旅遊日期：${travelDate || '今日'}
-- 旅遊風格：${preferences?.style || 'gourmet'} (美食/打卡/文化/親子/自然/慢活)
-- 同行夥伴：${preferences?.companion || 'couple'} (獨旅/情侶/家族長輩/親子/好友)
-- 行程節奏：${preferences?.pace || 'moderate'} (悠閒/適中/緊湊)
-- 站周邊首選交通工具：${preferences?.transport || 'walk_youbike'} (步行+YouBike/公車客運/租機車/計程車)
-- 備註需求：${preferences?.customNotes || '無特殊需求'}
 
-請生成一份完整、生動且具體可落地的詳細行程表。包含上午、中午在地美食、下午深度探索、傍晚伴手禮，並嚴格推薦「去程 3 個不同時段車次」與「回程 3 個不同時段車次」。`;
+★★★ 旅客個人化偏好要求（必須全面落實於行程規劃中）★★★
+1. 主題風格要求：${styleDesc}
+2. 同行夥伴考量：${companionDesc}
+3. 行程節奏與站點數：${paceDesc}
+4. 目的地接駁交通：${transportDesc}
+5. 旅客特別自訂需求備註：${customNotes ? `【最高優先級必達成需求】「${customNotes}」。請務必在行程標題、景點安排、餐飲選擇或導遊注意事項中明確呼應與落實此需求！` : '無特殊自訂需求'}
+
+請嚴格依照上述「主題風格」、「同行夥伴」、「節奏站點數量」、「當地交通方式」以及「自訂備註需求」，生成一份高契合度、生動具體且完全落地的行程表。包含主題標題、副標題、核心總結、各景點停留時間、交通指引、在地美食、去程3個時段班次與回程3個時段班次。`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',
@@ -397,6 +406,72 @@ ${currentItinerary ? `旅客目前已規劃的行程標題為「${currentItinera
   }
 });
 
+// Helpers for translating preferences into detailed expert prompts
+function getStyleDescription(style?: string): string {
+  switch (style) {
+    case 'gourmet':
+      return '【美食老饕主題】行程主軸為在地排隊名店、米其林必比登推薦、老街必吃傳統小吃與台鐵特色便當，景點與動線以美食朝聖與在地好味道為最高優先核心。';
+    case 'instagram':
+      return '【網美打卡主題】行程主軸為極美視覺景觀、文青老屋/海景咖啡廳、人氣地標攝影、光影藝術裝置與拍照打卡點，提供最佳拍照角度、光線時間與合影建議。';
+    case 'culture':
+      return '【歷史人文主題】行程主軸為百年老街、古蹟建築、歷史街區、鐵道文物館、故事聚落與傳統工藝巡禮，深入介紹文化歷史故事。';
+    case 'family':
+      return '【親子同樂主題】行程主軸為親子友善設施、安全好走平緩步道、手作DIY體驗、草地互動或趣味景點，動線需推車友善且節奏平順無危險路段。';
+    case 'nature':
+      return '【自然步道主題】行程主軸為山海綠意景觀、森林森呼吸步道、瀑布湖泊、地質景觀與戶外大自然漫步，感受大自然放鬆身心。';
+    case 'slow_life':
+      return '【慢活悠閒主題】行程主軸為不趕行程、步調愜意，挑選日式老屋茶館、安靜水岸放空，每個點停留充足時間，享受無壓力寧靜午後。';
+    default:
+      return '【在地經典綜合主題】結合在地代表性景點與特色美食。';
+  }
+}
+
+function getCompanionDescription(companion?: string): string {
+  switch (companion) {
+    case 'solo':
+      return '【一人獨旅自由行】適合一人自在漫步、安排方便一人用餐點餐的店家與放鬆沉澱空間。';
+    case 'couple':
+      return '【浪漫情侶約會】注重浪漫氛圍、特色景觀餐廳、合影留念打卡點與甜蜜午茶時光。';
+    case 'family_elder':
+      return '【長輩同行】嚴格要求：全線步道必須平緩好走、嚴禁長階梯與陡坡、每個景點需有充足坐處休息、安排在地清淡養生料理與洗手間便利之景點！';
+    case 'family_kids':
+      return '【親子育兒家庭】注重兒童安全性、趣味互動體驗、親子友善設施與洗手間便利性。';
+    case 'friends':
+      return '【好友同遊】適合多人歡樂合照、分食多樣化在地美食小吃、熱鬧商圈與打卡景點。';
+    default:
+      return '雙人同遊。';
+  }
+}
+
+function getPaceDescription(pace?: string): string {
+  switch (pace) {
+    case 'relaxed':
+      return '【慢步調（悠閒放鬆）】請【嚴格只安排 3~4 個站點】，每個景點停留 90~120 分鐘以上，保留大段放鬆時間，切勿塞入過多景點！';
+    case 'moderate':
+      return '【經典適中】請安排 4~5 個精華站點，停留時間 60~90 分鐘，節奏勻稱充實。';
+    case 'packed':
+      return '【精實踩點】請安排 5~6 個精華站點，充分利用一日時間，節奏緊湊且豐富多元。';
+    default:
+      return '【經典適中】安排 4~5 個精華站點。';
+  }
+}
+
+function getTransportDescription(transport?: string, destName?: string): string {
+  const stationName = destName || '火車站';
+  switch (transport) {
+    case 'walk_youbike':
+      return `【步行 + YouBike 2.0】所有景點必須嚴格位於${stationName}周邊半徑內（步行 5~15 分鐘或 YouBike 騎乘 5~10 分鐘以內可達），在每一站的 transportFromPrevious 中明確載明 YouBike 租借站點或步行指引。`;
+    case 'public_bus':
+      return `【市區公車 / 台灣好行客運】結合${stationName}前客運、台灣好行接駁路線，說明搭乘路線編號與站牌名稱。`;
+    case 'scooter_rental':
+      return `【站前租機車】出站於${stationName}前租借機車，可延伸探索 5~15 公里範圍的特色景點或山海秘境，行程動線順暢不繞路。`;
+    case 'taxi_car':
+      return `【計程車 / 包車】安排可由${stationName}前計程車直達的精華景點，省時舒適。`;
+    default:
+      return `【步行 + YouBike 2.0】${stationName}周邊低碳漫遊。`;
+  }
+}
+
 // Fallback generator for rich data when offline or building
 function generateFallbackItinerary(origin: any, destination: any, preferences: any, travelDate: string) {
   const destName = destination?.name || '礁溪';
@@ -405,8 +480,66 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
   const destLng = destination?.lng || 121.7725;
   const originName = origin?.name || '台北';
 
-  const defaultFoods = destination?.popularFoods || ['在地特色小吃', '台鐵招牌排骨便當', '老字號傳統糕點', '手作現烤點心'];
-  const defaultAttractions = destination?.popularAttractions || ['站前老街商圈', '在地文化園區', '景觀步道公園', '文創地標'];
+  const style = preferences?.style || 'gourmet';
+  const companion = preferences?.companion || 'couple';
+  const pace = preferences?.pace || 'moderate';
+  const transport = preferences?.transport || 'walk_youbike';
+  const customNotes = preferences?.customNotes ? preferences.customNotes.trim() : '';
+
+  const defaultFoods = destination?.popularFoods?.length ? destination.popularFoods : ['在地排隊老店小吃', '台鐵招牌便當', '老字號傳統糕點', '現烤特色手作點心'];
+  const defaultAttractions = destination?.popularAttractions?.length ? destination.popularAttractions : ['站前老街歷史街區', '在地文化園區', '景觀步道公園', '文創新地標'];
+
+  // Style-specific title and themes
+  let styleThemeTitle = '鐵道漫遊一日輕旅行';
+  let styleSubtitle = `悠遊${destCounty}・品味在地經典美食與慢活風光`;
+  if (style === 'gourmet') {
+    styleThemeTitle = '在地老饕美食一日巡禮';
+    styleSubtitle = `探索${destCounty}${destName}必吃老字號小吃、排隊名店與台鐵便當`;
+  } else if (style === 'instagram') {
+    styleThemeTitle = '美拍打卡＆文青景觀一日遊';
+    styleSubtitle = `精選${destName}絕美取景地標、老屋咖啡與光影秘境`;
+  } else if (style === 'culture') {
+    styleThemeTitle = '百年鐵道與歷史人文深度一日遊';
+    styleSubtitle = `走讀${destName}歷史老街、文化聚落與古蹟風華`;
+  } else if (style === 'family') {
+    styleThemeTitle = '親子同樂歡樂鐵道一日遊';
+    styleSubtitle = `平緩好走、寓教於樂體驗與親子友善漫遊動線`;
+  } else if (style === 'nature') {
+    styleThemeTitle = '山海綠意大自然森呼吸一日遊';
+    styleSubtitle = `漫步${destName}清幽自然步道、眺望遼闊景觀與溪流綠意`;
+  } else if (style === 'slow_life') {
+    styleThemeTitle = '不趕路慢活愜意茶屋一日遊';
+    styleSubtitle = `找間靜謐老屋品茗放空，享受${destName}寧靜午後時光`;
+  }
+
+  // Transport details helper
+  const getTransportDetails = (mode: string, minDuration: number) => {
+    if (transport === 'walk_youbike') {
+      return {
+        mode: 'youbike' as const,
+        durationText: `騎乘 YouBike 約 ${minDuration} 分鐘`,
+        details: `由${destName}火車站前 YouBike 2.0 站租借，順自行車道騎行即可抵達`,
+      };
+    } else if (transport === 'public_bus') {
+      return {
+        mode: 'bus' as const,
+        durationText: `搭乘公車/客運約 ${minDuration + 3} 分鐘`,
+        details: `於${destName}火車站前公車站搭乘台灣好行或市區接駁公車直達`,
+      };
+    } else if (transport === 'scooter_rental') {
+      return {
+        mode: 'taxi' as const,
+        durationText: `騎機車約 ${Math.max(3, Math.round(minDuration * 0.7))} 分鐘`,
+        details: `站前租機車出發，沿主要景觀道路騎乘`,
+      };
+    } else {
+      return {
+        mode: 'walk' as const,
+        durationText: `步行約 ${minDuration + 2} 分鐘`,
+        details: `由${destName}車站出發漫步抵達`,
+      };
+    }
+  };
 
   const outboundOptions = [
     {
@@ -474,18 +607,123 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
     },
   ];
 
+  // Dynamic stops according to style & pace
+  const allGeneratedStops: any[] = [
+    {
+      id: 'stop-1',
+      timeSlot: '10:00 - 11:20',
+      placeName: defaultAttractions[0] || `${destName}火車站前故事聚落`,
+      category: style === 'gourmet' ? 'food' : style === 'culture' ? 'culture' : 'spot',
+      description: `抵達${destName}火車站後展開專屬${style === 'gourmet' ? '美食朝聖' : style === 'culture' ? '歷史走讀' : '精選'}行程。${customNotes ? `（已為您特別納入需求：「${customNotes}」）` : ''}出站即可感受在地熱情生活氛圍。`,
+      highlight: style === 'instagram' ? '最佳採光拍攝地標・質感合影' : style === 'gourmet' ? '站前晨間排隊名店・古早好滋味' : '在地代表性地標與文化散策',
+      durationMinutes: pace === 'relaxed' ? 90 : 70,
+      address: `${destination?.address || destCounty + destName + '站前街區'}`,
+      lat: destLat + 0.002,
+      lng: destLng + 0.003,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(defaultAttractions[0] || destName)}`,
+      transportFromPrevious: {
+        mode: 'walk',
+        durationText: '步行約 3~5 分鐘',
+        details: `由${destName}火車站出口出站即達`,
+      },
+      recommendedItems: ['代表性地標留念', '漫步在地特色造景'],
+      tips: `${companion === 'family_elder' ? '此路段平緩無階梯，設有長椅可隨時小憩。' : companion === 'solo' ? '獨旅極佳散步動線，安靜舒適。' : '站前設有旅遊服務中心，可索取導覽地圖。'}`,
+      estimatedCostNtd: 0,
+    },
+    {
+      id: 'stop-2',
+      timeSlot: '11:35 - 13:05',
+      placeName: `${defaultFoods[0] || '在地老字號排隊美食'}品味午餐`,
+      category: 'food',
+      description: `來到${destName}絕不能錯過的人氣美味！嚴選在地食材與傳統老滷熬製，香味四溢，深獲老饕好評。`,
+      highlight: `必嚐名物：${defaultFoods[0] || '招牌老店特色小吃'}`,
+      durationMinutes: 90,
+      address: `${destCounty}${destName}美食老街`,
+      lat: destLat + 0.004,
+      lng: destLng - 0.002,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(defaultFoods[0] || destName + ' 美食')}`,
+      transportFromPrevious: getTransportDetails('transport', 6),
+      recommendedItems: defaultFoods.slice(0, 3),
+      tips: '午餐時段人潮較多，建議提早前往或先派人點餐入座。',
+      estimatedCostNtd: 220,
+    },
+    {
+      id: 'stop-3',
+      timeSlot: '13:25 - 15:15',
+      placeName: defaultAttractions[1] || `${destName}綠意風景園區/景觀咖啡`,
+      category: style === 'nature' ? 'nature' : style === 'instagram' ? 'photo' : 'spot',
+      description: `午後前往綠意盎然的景觀秘境或氛圍咖啡廳，享受${companion === 'couple' ? '浪漫甜蜜的約會時光' : companion === 'family_kids' ? '小朋友開心放電與互動體驗' : '遠離塵囂的愜意慢活'}。`,
+      highlight: style === 'instagram' ? '絕美打卡取景角度・光影氛圍極佳' : '綠意環抱・放鬆森呼吸景緻',
+      durationMinutes: pace === 'relaxed' ? 110 : 80,
+      address: `${destCounty}${destName}風景區`,
+      lat: destLat - 0.005,
+      lng: destLng + 0.006,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(defaultAttractions[1] || destName + ' 景點')}`,
+      transportFromPrevious: getTransportDetails('transport', 10),
+      recommendedItems: ['景觀步道散策', '特色飲品或手工點心'],
+      tips: '午後光線柔和，是拍照合影的最佳時機。',
+      estimatedCostNtd: 150,
+    },
+    {
+      id: 'stop-4',
+      timeSlot: '15:30 - 16:45',
+      placeName: `${defaultFoods[1] || '在地手作點心甜品'} ＆ 文創街區`,
+      category: 'shopping',
+      description: `漫步於特色巷弄，品嚐${defaultFoods[1] || '特色甜點'}，並感受當地的慢調生活美學。`,
+      highlight: '手作好滋味與文創特色選物',
+      durationMinutes: 75,
+      address: `${destCounty}${destName}商圈`,
+      lat: destLat + 0.001,
+      lng: destLng - 0.003,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destName + ' 甜點下午茶')}`,
+      transportFromPrevious: getTransportDetails('transport', 8),
+      recommendedItems: ['現做在地點心', '文創手作紀念小物'],
+      tips: '店家常有當季限定口味，值得一試。',
+      estimatedCostNtd: 120,
+    },
+    {
+      id: 'stop-5',
+      timeSlot: '17:00 - 17:50',
+      placeName: `${destName}站前名產伴手禮街 ＆ 台鐵便當`,
+      category: 'shopping',
+      description: `賦歸前回到火車站周邊，挑選${destCounty}特色伴手禮與外帶美味台鐵便當，為美好的一日鐵道之旅劃下完美句點。`,
+      highlight: '在地老字號伴手禮名產採購＆經典鐵路便當',
+      durationMinutes: 50,
+      address: `${destination?.address || destCounty + destName + '火車站前商圈'}`,
+      lat: destLat,
+      lng: destLng,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destName + ' 伴手禮')}`,
+      transportFromPrevious: {
+        mode: 'walk',
+        durationText: '步行約 4 分鐘',
+        details: `返回${destName}火車站候車大廳`,
+      },
+      recommendedItems: ['手作特色糕餅', '在地農特產禮盒', '台鐵經典排骨便當'],
+      tips: '建議提早 15 分鐘進站月台候車，避免匆忙。',
+      estimatedCostNtd: 300,
+    },
+  ];
+
+  // Limit stops by pace: relaxed -> 3-4 stops, moderate -> 4-5 stops, packed -> 5 stops
+  let finalStops = allGeneratedStops;
+  if (pace === 'relaxed') {
+    finalStops = [allGeneratedStops[0], allGeneratedStops[1], allGeneratedStops[2], allGeneratedStops[4]];
+  } else if (pace === 'moderate') {
+    finalStops = allGeneratedStops;
+  }
+
   return {
     id: `itin-${Date.now()}`,
     createdAt: new Date().toISOString(),
-    title: `【${originName} ➔ ${destName}】鐵道漫遊一日輕旅行`,
-    subtitle: `悠遊${destCounty}・品味在地經典美食與慢活風光`,
-    summary: `搭乘台鐵列車由${originName}出發直達${destName}站。抵達後透過輕鬆的步行與YouBike串聯站前熱門景點，品嚐${defaultFoods.slice(0, 2).join('、')}，下午漫步於${defaultAttractions.slice(0, 2).join('與')}，享受悠閒充實的一日鐵道假期。`,
-    estimatedTotalBudget: 1200,
+    title: `【${originName} ➔ ${destName}】${styleThemeTitle}`,
+    subtitle: styleSubtitle,
+    summary: `專為您量身定制的${originName}至${destName}鐵道一日遊。依據您偏好的「${getStyleDescription(style).split('】')[0].replace('【', '')}」與「${getCompanionDescription(companion).split('】')[0].replace('【', '')}」，搭配「${getTransportDescription(transport, destName).split('】')[0].replace('【', '')}」，${customNotes ? `並落實您的特別需求「${customNotes}」，` : ''}串聯${defaultFoods.slice(0, 2).join('、')}與${defaultAttractions.slice(0, 2).join('、')}，享受完美充實的一日假期。`,
+    estimatedTotalBudget: 1150,
     travelDate: travelDate || new Date().toISOString().split('T')[0],
     originStation: origin,
     destinationStation: destination,
     preferences: preferences || { style: 'gourmet', companion: 'couple', pace: 'moderate', transport: 'walk_youbike' },
-    weatherAdvice: '建議穿著輕便好走的休閒鞋，並攜帶雨具與防曬用品以備不時之需。',
+    weatherAdvice: '建議穿著輕便好走的休閒鞋，隨身攜帶水壺、雨具與防曬用品以備不時之需。',
     trainRecommendation: {
       outbound: outboundOptions[1],
       inbound: inboundOptions[1],
@@ -501,7 +739,7 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
       taxiTips: '站前設有排班計程車站，市區各景點單程跳表約 100~180 元。',
       precautions: [
         '部分在地老店僅收現金，建議備妥零錢。',
-        '假日人潮眾多時，名店用餐建議避開尖峰時段。',
+        customNotes ? `特別需求提醒：已於行程中考量「${customNotes}」。` : '假日人潮眾多時，名店用餐建議避開尖峰時段。',
         '搭乘台鐵返程請預留 15 分鐘前抵達月台候車。',
       ],
     },
@@ -510,92 +748,7 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
       souvenirs: ['在地特色農特產伴手禮', '傳統手作糕餅', '經典鐵道紀念商品'],
       bentoRecommendation: `${destName}站限定/台鐵經典八角排骨便當與特色風味便當`,
     },
-    stops: [
-      {
-        id: 'stop-1',
-        timeSlot: '10:00 - 11:30',
-        placeName: defaultAttractions[0] || `${destName}站前歷史街區`,
-        category: 'spot',
-        description: `走出${destName}火車站後，步行即可抵達的代表性地標。漫步於綠意與歷史建築之間，感受當地的慢活悠閒風情。`,
-        highlight: '在地歷史地標與散步打卡熱點',
-        durationMinutes: 90,
-        address: `${destination?.address || destCounty}`,
-        lat: destLat + 0.002,
-        lng: destLng + 0.003,
-        googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(defaultAttractions[0] || destName)}`,
-        transportFromPrevious: {
-          mode: 'walk',
-          durationText: '步行約 3~5 分鐘',
-          details: `由${destName}火車站前站出口直行即達`,
-        },
-        recommendedItems: ['漫步園區拍照', '參觀歷史建築常設展'],
-        tips: '站前設有旅遊諮詢處，可免費索取紙本地圖與導覽手冊。',
-        estimatedCostNtd: 0,
-      },
-      {
-        id: 'stop-2',
-        timeSlot: '11:45 - 13:15',
-        placeName: `${defaultFoods[0] || '在地老字號排隊美食'}品味午餐`,
-        category: 'food',
-        description: `來到${destName}必嚐的超人氣在地小吃，傳承數十載的古早味獨門醬汁與新鮮食材，是老饕們一致推薦的味蕾饗宴。`,
-        highlight: `在地評選必吃：${defaultFoods[0] || '招牌名產'}`,
-        durationMinutes: 90,
-        address: `${destCounty}${destName}老街美食區`,
-        lat: destLat + 0.004,
-        lng: destLng - 0.002,
-        googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(defaultFoods[0] || destName + ' 美食')}`,
-        transportFromPrevious: {
-          mode: 'walk',
-          durationText: '步行約 6 分鐘',
-          details: '沿商圈主要街道步行，跟著香味即可抵達',
-        },
-        recommendedItems: defaultFoods.slice(0, 3),
-        tips: '中午用餐人潮較多，若遇排隊可先派一人點餐。',
-        estimatedCostNtd: 250,
-      },
-      {
-        id: 'stop-3',
-        timeSlot: '13:30 - 15:30',
-        placeName: defaultAttractions[1] || `${destName}綠意風景園區`,
-        category: 'nature',
-        description: `午後前往綠意盎然的自然步道或文化園區，呼吸新鮮空氣、放鬆身心，享受遠離都市塵囂的寧靜午後時光。`,
-        highlight: '翠綠環抱，自然與人文交織的絕美秘境',
-        durationMinutes: 120,
-        address: `${destCounty}${destName}周邊景觀區`,
-        lat: destLat - 0.005,
-        lng: destLng + 0.006,
-        googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(defaultAttractions[1] || destName + ' 景點')}`,
-        transportFromPrevious: {
-          mode: 'youbike',
-          durationText: '騎乘 YouBike 約 8~10 分鐘',
-          details: '站前租借 YouBike，順著自行車道專用道騎乘',
-        },
-        recommendedItems: ['步道散策', '觀景台眺望群山海景'],
-        tips: '午後陽光較強，可攜帶水壺與薄外套。',
-        estimatedCostNtd: 50,
-      },
-      {
-        id: 'stop-4',
-        timeSlot: '15:45 - 17:00',
-        placeName: `${defaultFoods[1] || '特色下午茶'} & 伴手禮名店`,
-        category: 'shopping',
-        description: `回程前挑選${destCounty}特色伴手禮與品嚐甜點下午茶，帶一份在地的好滋味與親友分享。`,
-        highlight: '在地老店手作點心與精選伴手禮採購',
-        durationMinutes: 75,
-        address: `${destCounty}${destName}站前伴手禮一條街`,
-        lat: destLat + 0.001,
-        lng: destLng + 0.001,
-        googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destName + ' 伴手禮')}`,
-        transportFromPrevious: {
-          mode: 'walk',
-          durationText: '步行約 5 分鐘',
-          details: '返回火車站前站商圈',
-        },
-        recommendedItems: ['現烤手作糕點', '台鐵經典特色便當'],
-        tips: '可在此購買台鐵便當於回程列車上享用。',
-        estimatedCostNtd: 350,
-      },
-    ],
+    stops: finalStops,
   };
 }
 
