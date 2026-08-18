@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+@media print {
+  nav,
+  #btn-save-itinerary,
+  #btn-copy-itinerary,
+  #btn-share-itinerary,
+  #btn-export-pdf,
+  #station-planner-section,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  /* Prevent awkward page cuts in stops and train recommendations */
+  .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

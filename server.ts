@@ -155,7 +155,7 @@ app.post('/api/generate-itinerary', async (req, res) => {
 - 站周邊首選交通工具：${preferences?.transport || 'walk_youbike'} (步行+YouBike/公車客運/租機車/計程車)
 - 備註需求：${preferences?.customNotes || '無特殊需求'}
 
-請生成一份完整、生動且具體可落地的詳細行程表。包含上午、中午在地美食、下午深度探索、傍晚伴手禮與賦歸車次。`;
+請生成一份完整、生動且具體可落地的詳細行程表。包含上午、中午在地美食、下午深度探索、傍晚伴手禮，並嚴格推薦「去程 3 個不同時段車次」與「回程 3 個不同時段車次」。`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',
@@ -174,25 +174,61 @@ app.post('/api/generate-itinerary', async (req, res) => {
             trainRecommendation: {
               type: Type.OBJECT,
               properties: {
+                outboundList: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      optionLabel: { type: Type.STRING, description: '時段定位標籤，例如：早鳥首選、主力推薦、彈性出發' },
+                      trainType: { type: Type.STRING, description: '建議車種（如 EMU3000新自強、普悠瑪號、自強號、區間快車）' },
+                      trainNo: { type: Type.STRING, description: '車次號，如 自強 218次 或 區間快 4018次' },
+                      departureTime: { type: Type.STRING, description: '出發時間，如 08:35' },
+                      arrivalTime: { type: Type.STRING, description: '抵達時間，如 09:48' },
+                      fareEstimate: { type: Type.INTEGER, description: '單程票價（NTD）' },
+                      durationText: { type: Type.STRING, description: '車程描述，如 約1小時13分' },
+                      features: { type: Type.STRING, description: '特色亮點，如 全車對號座/舒適平穩 或 免劃位/可刷TPASS與悠遊卡' },
+                    },
+                    required: ['optionLabel', 'trainType', 'trainNo', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
+                  },
+                  description: '去程推薦列車清單，嚴格提供 3 個不同時段的班次選項（如：早鳥出發、主力推薦、悠閒晚出發）',
+                },
+                inboundList: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      optionLabel: { type: Type.STRING, description: '時段定位標籤，例如：提早賦歸、主力推薦、晚間慢活' },
+                      trainType: { type: Type.STRING, description: '建議回程車種' },
+                      trainNo: { type: Type.STRING, description: '回程車次號' },
+                      departureTime: { type: Type.STRING, description: '回程出發時間，如 17:40' },
+                      arrivalTime: { type: Type.STRING, description: '抵達起點時間，如 18:55' },
+                      fareEstimate: { type: Type.INTEGER, description: '回程票價（NTD）' },
+                      durationText: { type: Type.STRING, description: '車程描述' },
+                      features: { type: Type.STRING, description: '特色亮點' },
+                    },
+                    required: ['optionLabel', 'trainType', 'trainNo', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
+                  },
+                  description: '回程推薦班次清單，嚴格提供 3 個不同時段的班次選項（如：傍晚早回、主力推薦、晚間賦歸）',
+                },
                 outbound: {
                   type: Type.OBJECT,
                   properties: {
-                    trainType: { type: Type.STRING, description: '建議去程車種（如 EMU3000新自強、普悠瑪號、區間快車）' },
-                    trainNo: { type: Type.STRING, description: '去程建議車次號（如 218次 或 112次）' },
-                    departureTime: { type: Type.STRING, description: '建議出發時間，如 08:30' },
-                    arrivalTime: { type: Type.STRING, description: '預計抵達目的地時間，如 09:45' },
+                    trainType: { type: Type.STRING, description: '主力推薦去程車種' },
+                    trainNo: { type: Type.STRING, description: '去程主力推薦車次號' },
+                    departureTime: { type: Type.STRING, description: '建議出發時間，如 08:35' },
+                    arrivalTime: { type: Type.STRING, description: '預計抵達目的地時間，如 09:48' },
                     fareEstimate: { type: Type.INTEGER, description: '單程票價預估（NTD）' },
-                    durationText: { type: Type.STRING, description: '車程時間描述，如 約1小時15分' },
+                    durationText: { type: Type.STRING, description: '車程時間描述' },
                   },
                   required: ['trainType', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
                 },
                 inbound: {
                   type: Type.OBJECT,
                   properties: {
-                    trainType: { type: Type.STRING, description: '建議回程車種' },
-                    trainNo: { type: Type.STRING, description: '回程建議車次號' },
-                    departureTime: { type: Type.STRING, description: '建議回程時間，如 18:20' },
-                    arrivalTime: { type: Type.STRING, description: '抵達起點站時間，如 19:40' },
+                    trainType: { type: Type.STRING, description: '主力推薦回程車種' },
+                    trainNo: { type: Type.STRING, description: '回程主力推薦車次號' },
+                    departureTime: { type: Type.STRING, description: '建議回程時間，如 17:40' },
+                    arrivalTime: { type: Type.STRING, description: '抵達起點站時間，如 18:55' },
                     fareEstimate: { type: Type.INTEGER, description: '回程票價預估（NTD）' },
                     durationText: { type: Type.STRING, description: '車程時間描述' },
                   },
@@ -201,7 +237,7 @@ app.post('/api/generate-itinerary', async (req, res) => {
                 bookingTip: { type: Type.STRING, description: '台鐵購票提醒（如 乘車前28天開放訂票、連續假期請提早搶票等）' },
                 traOfficialUrl: { type: Type.STRING, description: 'https://www.railway.gov.tw/tra-tip-web/tip' },
               },
-              required: ['outbound', 'inbound', 'bookingTip'],
+              required: ['outboundList', 'inboundList', 'bookingTip'],
             },
             transitGuide: {
               type: Type.OBJECT,
@@ -281,6 +317,19 @@ app.post('/api/generate-itinerary', async (req, res) => {
     parsed.destinationStation = destination;
     parsed.travelDate = travelDate || new Date().toISOString().split('T')[0];
     parsed.preferences = preferences;
+
+    // Ensure outbound and inbound are present and populated
+    if (parsed.trainRecommendation?.outboundList && parsed.trainRecommendation.outboundList.length > 0) {
+      if (!parsed.trainRecommendation.outbound) {
+        parsed.trainRecommendation.outbound = parsed.trainRecommendation.outboundList[1] || parsed.trainRecommendation.outboundList[0];
+      }
+    }
+    if (parsed.trainRecommendation?.inboundList && parsed.trainRecommendation.inboundList.length > 0) {
+      if (!parsed.trainRecommendation.inbound) {
+        parsed.trainRecommendation.inbound = parsed.trainRecommendation.inboundList[1] || parsed.trainRecommendation.inboundList[0];
+      }
+    }
+
     parsed.trainRecommendation.traOfficialUrl = 'https://www.railway.gov.tw/tra-tip-web/tip';
 
     res.json({ itinerary: parsed });
@@ -359,6 +408,72 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
   const defaultFoods = destination?.popularFoods || ['在地特色小吃', '台鐵招牌排骨便當', '老字號傳統糕點', '手作現烤點心'];
   const defaultAttractions = destination?.popularAttractions || ['站前老街商圈', '在地文化園區', '景觀步道公園', '文創地標'];
 
+  const outboundOptions = [
+    {
+      optionLabel: '早鳥首選',
+      trainType: '新自強號 (EMU3000)',
+      trainNo: '自強 408次',
+      departureTime: '07:40',
+      arrivalTime: '08:52',
+      fareEstimate: 218,
+      durationText: '約1小時12分',
+      features: '全車對號座・晨間抵達充實探索',
+    },
+    {
+      optionLabel: '主力推薦',
+      trainType: 'EMU3000 / 普悠瑪號',
+      trainNo: '自強 218次',
+      departureTime: '08:35',
+      arrivalTime: '09:48',
+      fareEstimate: 218,
+      durationText: '約1小時13分',
+      features: '熱門黃金時段・最省時舒適班次',
+    },
+    {
+      optionLabel: '悠閒出發',
+      trainType: '區間快車 / 自強號',
+      trainNo: '區快 4018次',
+      departureTime: '09:20',
+      arrivalTime: '10:45',
+      fareEstimate: 168,
+      durationText: '約1小時25分',
+      features: '免劃位・可刷 TPASS 與悠遊卡乘車',
+    },
+  ];
+
+  const inboundOptions = [
+    {
+      optionLabel: '提早賦歸',
+      trainType: '自強號',
+      trainNo: '自強 223次',
+      departureTime: '16:50',
+      arrivalTime: '18:10',
+      fareEstimate: 218,
+      durationText: '約1小時20分',
+      features: '避開尖峰人潮・輕鬆返家享用晚餐',
+    },
+    {
+      optionLabel: '主力推薦',
+      trainType: '新自強號 (EMU3000)',
+      trainNo: '自強 229次',
+      departureTime: '17:40',
+      arrivalTime: '18:55',
+      fareEstimate: 218,
+      durationText: '約1小時15分',
+      features: '完美一日遊收尾・車上享用鐵路便當',
+    },
+    {
+      optionLabel: '晚間漫遊',
+      trainType: '自強號 / 區間快',
+      trainNo: '自強 285次',
+      departureTime: '19:15',
+      arrivalTime: '20:38',
+      fareEstimate: 218,
+      durationText: '約1小時23分',
+      features: '夜市商圈逛好逛滿・享受在地夜景',
+    },
+  ];
+
   return {
     id: `itin-${Date.now()}`,
     createdAt: new Date().toISOString(),
@@ -372,22 +487,10 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
     preferences: preferences || { style: 'gourmet', companion: 'couple', pace: 'moderate', transport: 'walk_youbike' },
     weatherAdvice: '建議穿著輕便好走的休閒鞋，並攜帶雨具與防曬用品以備不時之需。',
     trainRecommendation: {
-      outbound: {
-        trainType: 'EMU3000 新自強號 / 普悠瑪號',
-        trainNo: '自強 218次',
-        departureTime: '08:35',
-        arrivalTime: '09:50',
-        fareEstimate: 218,
-        durationText: '約1小時15分',
-      },
-      inbound: {
-        trainType: 'EMU3000 新自強號',
-        trainNo: '自強 229次',
-        departureTime: '17:40',
-        arrivalTime: '18:55',
-        fareEstimate: 218,
-        durationText: '約1小時15分',
-      },
+      outbound: outboundOptions[1],
+      inbound: inboundOptions[1],
+      outboundList: outboundOptions,
+      inboundList: inboundOptions,
       bookingTip: '台鐵車票於乘車日前28天凌晨 00:00 開放預訂，週末熱門班次請提早於台鐵官網或「台鐵e訂通」App搶票。',
       traOfficialUrl: 'https://www.railway.gov.tw/tra-tip-web/tip',
     },

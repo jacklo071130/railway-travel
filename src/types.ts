@@ -60,6 +60,17 @@ export interface ItineraryStop {
   photoUrl?: string;
 }
 
+export interface TrainTripOption {
+  optionLabel?: string; // 如：主力推薦、早鳥首選、彈性出發、晚間賦歸
+  trainType: string;
+  trainNo: string;
+  departureTime: string;
+  arrivalTime: string;
+  fareEstimate: number;
+  durationText: string;
+  features?: string;
+}
+
 export interface DayItinerary {
   id: string;
   createdAt: string;
@@ -70,22 +81,10 @@ export interface DayItinerary {
   travelDate: string;
   preferences: TravelPreferences;
   trainRecommendation: {
-    outbound: {
-      trainType: string;
-      trainNo: string;
-      departureTime: string;
-      arrivalTime: string;
-      fareEstimate: number;
-      durationText: string;
-    };
-    inbound: {
-      trainType: string;
-      trainNo: string;
-      departureTime: string;
-      arrivalTime: string;
-      fareEstimate: number;
-      durationText: string;
-    };
+    outbound: TrainTripOption;
+    inbound: TrainTripOption;
+    outboundList?: TrainTripOption[];
+    inboundList?: TrainTripOption[];
     bookingTip: string;
     traOfficialUrl: string;
   };

@@ -8,7 +8,7 @@ import {
   Bookmark,
   Check,
   Copy,
-  Printer,
+  FileDown,
   Utensils,
   Camera,
   Landmark,
@@ -20,12 +20,12 @@ import {
   Bus,
   Car,
   DollarSign,
-  Share2,
   Sparkles,
   AlertCircle
 } from 'lucide-react';
 import { DayItinerary, ItineraryStop } from '../types';
 import confetti from 'canvas-confetti';
+import { PdfExportModal } from './PdfExportModal';
 
 interface ItineraryViewProps {
   itinerary: DayItinerary;
@@ -41,10 +41,93 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   onSelectStopOnMap,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // Normalize 3 Outbound Train Options
+  const outboundList = itinerary.trainRecommendation.outboundList && itinerary.trainRecommendation.outboundList.length > 0
+    ? itinerary.trainRecommendation.outboundList
+    : [
+        {
+          optionLabel: '早鳥首選',
+          trainType: '新自強號 (EMU3000)',
+          trainNo: '自強 408次',
+          departureTime: '07:40',
+          arrivalTime: '08:52',
+          fareEstimate: itinerary.trainRecommendation.outbound.fareEstimate || 218,
+          durationText: '約1小時12分',
+          features: '全車對號座・晨間抵達探索',
+        },
+        {
+          optionLabel: '主力推薦',
+          ...itinerary.trainRecommendation.outbound,
+          features: itinerary.trainRecommendation.outbound.features || '黃金黃金時段・最省時班次',
+        },
+        {
+          optionLabel: '悠閒出發',
+          trainType: '區間快車 / 自強號',
+          trainNo: '區快 4018次',
+          departureTime: '09:20',
+          arrivalTime: '10:45',
+          fareEstimate: Math.max(100, (itinerary.trainRecommendation.outbound.fareEstimate || 218) - 50),
+          durationText: '約1小時25分',
+          features: '免劃位・可刷 TPASS 悠遊卡',
+        },
+      ];
+
+  // Normalize 3 Inbound Train Options
+  const inboundList = itinerary.trainRecommendation.inboundList && itinerary.trainRecommendation.inboundList.length > 0
+    ? itinerary.trainRecommendation.inboundList
+    : [
+        {
+          optionLabel: '提早賦歸',
+          trainType: '自強號',
+          trainNo: '自強 223次',
+          departureTime: '16:50',
+          arrivalTime: '18:10',
+          fareEstimate: itinerary.trainRecommendation.inbound.fareEstimate || 218,
+          durationText: '約1小時20分',
+          features: '避開尖峰人潮・輕鬆返家',
+        },
+        {
+          optionLabel: '主力推薦',
+          ...itinerary.trainRecommendation.inbound,
+          features: itinerary.trainRecommendation.inbound.features || '完美一日遊收尾・車上享便當',
+        },
+        {
+          optionLabel: '晚間漫遊',
+          trainType: '自強號 / 區間快',
+          trainNo: '自強 285次',
+          departureTime: '19:15',
+          arrivalTime: '20:38',
+          fareEstimate: itinerary.trainRecommendation.inbound.fareEstimate || 218,
+          durationText: '約1小時23分',
+          features: '夜市商圈逛足・盡享夜景',
+        },
+      ];
+
+  // Initialize selected indices
+  const initialOutboundIdx = outboundList.findIndex(t => t.optionLabel?.includes('主力')) !== -1
+    ? outboundList.findIndex(t => t.optionLabel?.includes('主力'))
+    : 0;
+  const initialInboundIdx = inboundList.findIndex(t => t.optionLabel?.includes('主力')) !== -1
+    ? inboundList.findIndex(t => t.optionLabel?.includes('主力'))
+    : 0;
+
+  const [selectedOutboundIdx, setSelectedOutboundIdx] = useState(initialOutboundIdx);
+  const [selectedInboundIdx, setSelectedInboundIdx] = useState(initialInboundIdx);
+
+  const activeOutbound = outboundList[selectedOutboundIdx] || outboundList[0];
+  const activeInbound = inboundList[selectedInboundIdx] || inboundList[0];
 
   const handleCopyText = () => {
-    const text = `🚂【${itinerary.title}】\n📅 旅遊日期：${itinerary.travelDate}\n💰 預估人均花費：約 NT$ ${itinerary.estimatedTotalBudget}\n\n🚆【台鐵車次推薦】\n去程：${itinerary.trainRecommendation.outbound.trainType} ${itinerary.trainRecommendation.outbound.trainNo} (${itinerary.trainRecommendation.outbound.departureTime} ➔ ${itinerary.trainRecommendation.outbound.arrivalTime})\n回程：${itinerary.trainRecommendation.inbound.trainType} ${itinerary.trainRecommendation.inbound.trainNo} (${itinerary.trainRecommendation.inbound.departureTime} ➔ ${itinerary.trainRecommendation.inbound.arrivalTime})\n\n🗺️【一日遊行程時間表】\n${itinerary.stops
+    const outboundSummary = outboundList
+      .map((t, i) => `  [${t.optionLabel || `時段${i+1}`}] ${t.trainType} ${t.trainNo} (${t.departureTime}➔${t.arrivalTime}, 約NT$${t.fareEstimate})${i === selectedOutboundIdx ? ' ★已選' : ''}`)
+      .join('\n');
+    const inboundSummary = inboundList
+      .map((t, i) => `  [${t.optionLabel || `時段${i+1}`}] ${t.trainType} ${t.trainNo} (${t.departureTime}➔${t.arrivalTime}, 約NT$${t.fareEstimate})${i === selectedInboundIdx ? ' ★已選' : ''}`)
+      .join('\n');
+
+    const text = `🚂【${itinerary.title}】\n📅 旅遊日期：${itinerary.travelDate}\n💰 預估人均花費：約 NT$ ${itinerary.estimatedTotalBudget}\n\n🚆【台鐵去程推薦班次 (3班時段)】\n${outboundSummary}\n\n🚆【台鐵回程推薦班次 (3班時段)】\n${inboundSummary}\n\n🗺️【一日遊行程時間表】\n${itinerary.stops
       .map(
         (s, idx) =>
           `${idx + 1}. [${s.timeSlot}] ${s.placeName} (${s.highlight})\n   📍 地址：${s.address}\n   🚶 交通：${s.transportFromPrevious.durationText} - ${s.transportFromPrevious.details}\n   💡 導遊貼士：${s.tips || ''}`
@@ -55,22 +138,6 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: itinerary.title,
-          text: `${itinerary.title} - 台灣鐵道一日遊行程表`,
-          url: window.location.href,
-        })
-        .catch(() => {});
-    } else {
-      handleCopyText();
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
-    }
   };
 
   const handleSaveWithCelebration = () => {
@@ -194,21 +261,13 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
               </button>
 
               <button
-                id="btn-share-itinerary"
-                onClick={handleShare}
-                className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/20 flex items-center space-x-1.5 transition-colors"
+                id="btn-export-pdf"
+                onClick={() => setIsPdfModalOpen(true)}
+                className="flex px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold border border-blue-400/40 items-center space-x-1.5 transition-all shadow-sm active:scale-95"
+                title="預覽並匯出成 PDF 文件"
               >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>{shared ? '已分享' : '分享'}</span>
-              </button>
-
-              <button
-                id="btn-print-itinerary"
-                onClick={() => window.print()}
-                className="hidden sm:flex px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/20 items-center space-x-1.5 transition-colors"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>列印</span>
+                <FileDown className="w-3.5 h-3.5 text-blue-100" />
+                <span>匯出成PDF</span>
               </button>
             </div>
           </div>
@@ -263,22 +322,22 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
         </div>
       </div>
 
-      {/* Taiwan Railway (台鐵) Timetable Recommendation Card */}
+      {/* Taiwan Railway (台鐵) Timetable Recommendation Card - 3 Options for Outbound & Inbound */}
       <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-100">
           <div className="flex items-center space-x-2">
             <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
               <Train className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <span>台鐵建議來回乘車時刻與票價</span>
-                <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                  TRA Timetable
+                <span>台鐵乘車時刻推薦</span>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                  去回各 3 個時段班次
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                以最舒適省時為原則推薦班次，票價與即時動態以台鐵官網公告為準
+                提供早鳥、主力推薦與彈性時段 3 種乘車方案，點擊可切換選取！
               </p>
             </div>
           </div>
@@ -295,82 +354,193 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
           </a>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Outbound Train */}
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                去程推薦列車
-              </span>
-              <span className="text-xs text-slate-500">
-                車程 {itinerary.trainRecommendation.outbound.durationText}
-              </span>
-            </div>
-            <div className="text-sm font-bold text-slate-800">
-              {itinerary.trainRecommendation.outbound.trainType}{' '}
-              <span className="text-blue-600 font-extrabold">{itinerary.trainRecommendation.outbound.trainNo}</span>
-            </div>
-            <div className="flex items-center justify-between mt-3 text-xs sm:text-sm">
-              <div className="text-left">
-                <span className="text-slate-400 block text-[11px]">{itinerary.originStation.name}站 開</span>
-                <span className="text-base font-black text-slate-800">
-                  {itinerary.trainRecommendation.outbound.departureTime}
+        {/* Train Directions: Outbound (去程) & Inbound (回程) */}
+        <div className="space-y-6 mb-5">
+          {/* 1. Outbound Trains (3 Options) */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                  <Train className="w-3.5 h-3.5" />
+                  <span>去程推薦列車</span>
+                </span>
+                <span className="text-xs text-slate-600 font-medium">
+                  {itinerary.originStation.name} ➔ {itinerary.destinationStation.name}
                 </span>
               </div>
-              <div className="flex-1 mx-3 border-b-2 border-dashed border-slate-300 text-center relative top-[-6px]">
-                <Train className="w-3.5 h-3.5 text-blue-500 mx-auto -mb-2 bg-slate-50 px-0.5" />
-              </div>
-              <div className="text-right">
-                <span className="text-slate-400 block text-[11px]">{itinerary.destinationStation.name}站 到</span>
-                <span className="text-base font-black text-slate-800">
-                  {itinerary.trainRecommendation.outbound.arrivalTime}
-                </span>
-              </div>
+              <span className="text-xs text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+                目前選定：{activeOutbound.optionLabel || `方案 ${selectedOutboundIdx + 1}`} ({activeOutbound.departureTime} 開)
+              </span>
             </div>
-            <div className="mt-2 text-right text-xs font-semibold text-slate-600">
-              單程票價約: <span className="text-blue-600 font-bold">NT$ {itinerary.trainRecommendation.outbound.fareEstimate}</span>
+
+            {/* 3 Outbound Option Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {outboundList.map((train, idx) => {
+                const isSelected = idx === selectedOutboundIdx;
+                return (
+                  <button
+                    key={`outbound-${idx}`}
+                    id={`btn-select-outbound-${idx}`}
+                    type="button"
+                    onClick={() => setSelectedOutboundIdx(idx)}
+                    className={`text-left rounded-xl p-3.5 transition-all relative border flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-emerald-50/80 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20'
+                        : 'bg-white hover:bg-slate-100/80 border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                            isSelected
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {train.optionLabel || `時段 ${idx + 1}`}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-0.5">
+                            <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                            已選定
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs font-bold text-slate-800 mt-1 line-clamp-1">
+                        {train.trainType}
+                      </div>
+                      <div className="text-xs font-extrabold text-blue-600">
+                        {train.trainNo}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2.5 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">{itinerary.originStation.name} 開</span>
+                          <span className="text-sm font-black text-slate-800">{train.departureTime}</span>
+                        </div>
+                        <div className="text-center px-1">
+                          <span className="text-[10px] text-slate-400 block">{train.durationText}</span>
+                          <span className="text-slate-300 text-xs">➔</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block">{itinerary.destinationStation.name} 到</span>
+                          <span className="text-sm font-black text-slate-800">{train.arrivalTime}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">預估單程</span>
+                      <span className="font-bold text-emerald-700">NT$ {train.fareEstimate}</span>
+                    </div>
+
+                    {train.features && (
+                      <div className="mt-1.5 text-[10px] text-slate-500 bg-slate-100/90 rounded px-1.5 py-0.5 truncate">
+                        {train.features}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Inbound Train */}
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md">
-                回程建議班次 (賦歸)
-              </span>
-              <span className="text-xs text-slate-500">
-                車程 {itinerary.trainRecommendation.inbound.durationText}
-              </span>
-            </div>
-            <div className="text-sm font-bold text-slate-800">
-              {itinerary.trainRecommendation.inbound.trainType}{' '}
-              <span className="text-indigo-600 font-extrabold">{itinerary.trainRecommendation.inbound.trainNo}</span>
-            </div>
-            <div className="flex items-center justify-between mt-3 text-xs sm:text-sm">
-              <div className="text-left">
-                <span className="text-slate-400 block text-[11px]">{itinerary.destinationStation.name}站 開</span>
-                <span className="text-base font-black text-slate-800">
-                  {itinerary.trainRecommendation.inbound.departureTime}
+          {/* 2. Inbound Trains (3 Options) */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-indigo-700 bg-indigo-100 border border-indigo-300 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                  <Train className="w-3.5 h-3.5" />
+                  <span>回程建議班次 (賦歸)</span>
+                </span>
+                <span className="text-xs text-slate-600 font-medium">
+                  {itinerary.destinationStation.name} ➔ {itinerary.originStation.name}
                 </span>
               </div>
-              <div className="flex-1 mx-3 border-b-2 border-dashed border-slate-300 text-center relative top-[-6px]">
-                <Train className="w-3.5 h-3.5 text-indigo-500 mx-auto -mb-2 bg-slate-50 px-0.5" />
-              </div>
-              <div className="text-right">
-                <span className="text-slate-400 block text-[11px]">{itinerary.originStation.name}站 到</span>
-                <span className="text-base font-black text-slate-800">
-                  {itinerary.trainRecommendation.inbound.arrivalTime}
-                </span>
-              </div>
+              <span className="text-xs text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md">
+                目前選定：{activeInbound.optionLabel || `方案 ${selectedInboundIdx + 1}`} ({activeInbound.departureTime} 開)
+              </span>
             </div>
-            <div className="mt-2 text-right text-xs font-semibold text-slate-600">
-              單程票價約: <span className="text-indigo-600 font-bold">NT$ {itinerary.trainRecommendation.inbound.fareEstimate}</span>
+
+            {/* 3 Inbound Option Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {inboundList.map((train, idx) => {
+                const isSelected = idx === selectedInboundIdx;
+                return (
+                  <button
+                    key={`inbound-${idx}`}
+                    id={`btn-select-inbound-${idx}`}
+                    type="button"
+                    onClick={() => setSelectedInboundIdx(idx)}
+                    className={`text-left rounded-xl p-3.5 transition-all relative border flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-indigo-50/80 border-indigo-500 shadow-sm ring-2 ring-indigo-500/20'
+                        : 'bg-white hover:bg-slate-100/80 border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {train.optionLabel || `時段 ${idx + 1}`}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[10px] font-bold text-indigo-700 flex items-center gap-0.5">
+                            <Check className="w-3 h-3 text-indigo-600 stroke-[3]" />
+                            已選定
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs font-bold text-slate-800 mt-1 line-clamp-1">
+                        {train.trainType}
+                      </div>
+                      <div className="text-xs font-extrabold text-indigo-600">
+                        {train.trainNo}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2.5 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">{itinerary.destinationStation.name} 開</span>
+                          <span className="text-sm font-black text-slate-800">{train.departureTime}</span>
+                        </div>
+                        <div className="text-center px-1">
+                          <span className="text-[10px] text-slate-400 block">{train.durationText}</span>
+                          <span className="text-slate-300 text-xs">➔</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block">{itinerary.originStation.name} 到</span>
+                          <span className="text-sm font-black text-slate-800">{train.arrivalTime}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">預估單程</span>
+                      <span className="font-bold text-indigo-700">NT$ {train.fareEstimate}</span>
+                    </div>
+
+                    {train.features && (
+                      <div className="mt-1.5 text-[10px] text-slate-500 bg-slate-100/90 rounded px-1.5 py-0.5 truncate">
+                        {train.features}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* Booking tip */}
-        <div className="flex items-start space-x-2 bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-900">
+        <div className="flex items-start space-x-2 bg-amber-50/80 border border-amber-200/90 rounded-xl p-3 text-xs text-amber-900">
           <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">購票貼心提醒：</span>
@@ -644,6 +814,15 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* PDF Export & Preview Modal */}
+      <PdfExportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        itinerary={itinerary}
+        selectedOutbound={activeOutbound}
+        selectedInbound={activeInbound}
+      />
     </div>
   );
 };
