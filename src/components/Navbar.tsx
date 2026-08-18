@@ -133,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
                   : 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/50 text-amber-300 animate-pulse'
               }`}
-              title="設定並驗證 Gemini AI 與 Google Maps API 金鑰"
+              title="驗證並暫存 Gemini AI 與 Google Maps API 金鑰（僅記憶體暫存）"
             >
               <Key className="w-3.5 h-3.5 text-indigo-400" />
               <span className="hidden xl:inline">API 金鑰</span>
@@ -142,13 +142,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className={`w-2 h-2 rounded-full ${
                     apiKeys.isGeminiValid ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 'bg-slate-500'
                   }`}
-                  title={apiKeys.isGeminiValid ? 'AI 金鑰已驗證' : 'AI 金鑰待設定'}
+                  title={apiKeys.isGeminiValid ? 'AI 金鑰已驗證暫存' : 'AI 金鑰待設定'}
                 />
                 <span
                   className={`w-2 h-2 rounded-full ${
                     apiKeys.isMapsValid ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 'bg-slate-500'
                   }`}
-                  title={apiKeys.isMapsValid ? '地圖金鑰已驗證' : '地圖金鑰待設定'}
+                  title={apiKeys.isMapsValid ? '地圖金鑰已驗證暫存' : '地圖金鑰待設定'}
                 />
               </span>
             </button>

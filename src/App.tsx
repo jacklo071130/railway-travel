@@ -13,15 +13,16 @@ import { TRAStation, TravelPreferences, DayItinerary, ItineraryStop, ApiKeysConf
 import { TAIWAN_TRA_STATIONS, findStationById } from './data/taiwanStations';
 import { Train, Sparkles, MapPin, Compass, AlertCircle, RefreshCw, Key, ShieldCheck } from 'lucide-react';
 
+// In-memory session temporary state for API Keys (do not persist to localStorage)
 const STORAGE_KEY_SAVED_TRIPS = 'TRA_TRAVEL_SAVED_TRIPS_V1';
 const STORAGE_KEY_API_KEYS = 'TRA_API_KEYS_CONFIG_V1';
 
 export default function App() {
-  // 0. API Keys State & Gating
+  // 0. API Keys State (Temporary In-Memory Session Cache - Not stored in localStorage)
   const [apiKeys, setApiKeys] = useState<ApiKeysConfig>(() => {
+    // Clear any previously persisted API keys from localStorage to respect temporary privacy
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_API_KEYS);
-      if (saved) return JSON.parse(saved);
+      localStorage.removeItem(STORAGE_KEY_API_KEYS);
     } catch {}
     return {
       geminiApiKey: '',
@@ -85,7 +86,7 @@ export default function App() {
 
   const itineraryResultRef = useRef<HTMLDivElement>(null);
 
-  // Auto save trips & api keys to local storage
+  // Auto save trips to local storage (API keys are kept strictly temporary in memory only)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_SAVED_TRIPS, JSON.stringify(savedTrips));
@@ -93,14 +94,6 @@ export default function App() {
       console.error('Failed to save to localStorage', e);
     }
   }, [savedTrips]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_API_KEYS, JSON.stringify(apiKeys));
-    } catch (e) {
-      console.error('Failed to save API keys to localStorage', e);
-    }
-  }, [apiKeys]);
 
   // Initial Sample Itinerary on load (台北 -> 礁溪)
   useEffect(() => {
@@ -664,12 +657,8 @@ export default function App() {
         onClose={() => setIsApiKeyModalOpen(false)}
         apiKeys={apiKeys}
         onSaveKeys={(newKeys) => {
+          // Temporary in-memory cache only
           setApiKeys(newKeys);
-          try {
-            localStorage.setItem(STORAGE_KEY_API_KEYS, JSON.stringify(newKeys));
-          } catch (e) {
-            console.error('Failed to save API keys to localStorage', e);
-          }
         }}
       />
     </div>

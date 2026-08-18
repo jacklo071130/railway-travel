@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   Download, 
@@ -6,12 +6,7 @@ import {
   Train, 
   Clock, 
   MapPin, 
-  Utensils, 
   Calendar, 
-  Wallet, 
-  ShieldCheck, 
-  Navigation,
-  Sparkles,
   Loader2,
   CheckCircle2
 } from 'lucide-react';
@@ -36,12 +31,33 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   const [generateSuccess, setGenerateSuccess] = useState(false);
   const printContentRef = useRef<HTMLDivElement>(null);
 
+  // Close on Escape key press & prevent background scroll
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const outbound = selectedOutbound || itinerary.trainRecommendation.outbound;
   const inbound = selectedInbound || itinerary.trainRecommendation.inbound;
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!printContentRef.current || isGenerating) return;
 
     try {
@@ -82,14 +98,14 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
       }, 3000);
     } catch (err) {
       console.error('PDF generation error, falling back to window.print():', err);
-      // Fallback
       window.print();
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleBrowserPrint = () => {
+  const handleBrowserPrint = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     const originalTitle = document.title;
     document.title = `${itinerary.title} - 台鐵一日遊行程表`;
     window.print();
@@ -98,12 +114,27 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
     }, 1500);
   };
 
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-3 sm:p-6 overflow-y-auto"
+      onClick={handleClose}
+      id="pdf-export-modal-backdrop"
+    >
+      <div 
+        className="bg-slate-900 border border-slate-700 w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 bg-slate-800/90 border-b border-slate-700/80 sticky top-0 z-20">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-slate-800/95 border-b border-slate-700 sticky top-0 z-20">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
               <Download className="w-5 h-5" />
@@ -115,7 +146,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                   A4 排版最佳化
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 hidden sm:block">
                 可直接下載高畫質 PDF 文件隨身攜帶，或使用瀏覽器列印
               </p>
             </div>
@@ -125,19 +156,20 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
           <div className="flex items-center space-x-2">
             <button
               id="btn-modal-download-pdf"
+              type="button"
               onClick={handleDownloadPdf}
               disabled={isGenerating}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs sm:text-sm font-bold flex items-center space-x-2 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+              className="px-3.5 sm:px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs sm:text-sm font-bold flex items-center space-x-1.5 sm:space-x-2 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 cursor-pointer"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>生成 PDF 中...</span>
+                  <span>生成中...</span>
                 </>
               ) : generateSuccess ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                  <span>下載完成！</span>
+                  <span>已下載！</span>
                 </>
               ) : (
                 <>
@@ -149,27 +181,32 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
             <button
               id="btn-modal-print-pdf"
+              type="button"
               onClick={handleBrowserPrint}
-              className="hidden sm:flex px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-semibold items-center space-x-1.5 transition-colors border border-slate-600"
+              className="hidden sm:flex px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-semibold items-center space-x-1.5 transition-colors border border-slate-600 cursor-pointer"
               title="使用瀏覽器列印或另存為 PDF"
             >
               <Printer className="w-4 h-4 text-slate-300" />
               <span>列印 / 另存</span>
             </button>
 
+            {/* Prominent Close Button */}
             <button
               id="btn-close-pdf-modal"
-              onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700/60 transition-colors"
-              title="關閉"
+              type="button"
+              onClick={handleClose}
+              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-700/80 hover:bg-rose-600 text-slate-200 hover:text-white border border-slate-600 hover:border-rose-500 flex items-center space-x-1 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="關閉預覽視窗 (Esc)"
+              aria-label="關閉預覽視窗"
             >
               <X className="w-5 h-5" />
+              <span className="hidden sm:inline text-xs font-semibold">關閉</span>
             </button>
           </div>
         </div>
 
         {/* Modal Body - PDF Sheet Preview Container */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950/60 flex justify-center">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950/70 flex justify-center">
           
           {/* Printable Document Paper Card (Pure White A4-like container for pristine PDF output) */}
           <div 
@@ -378,6 +415,31 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
             </div>
           </div>
 
+        </div>
+
+        {/* Modal Bottom Footer Bar */}
+        <div className="px-5 py-3 bg-slate-800/90 border-t border-slate-700/80 flex items-center justify-between">
+          <span className="text-xs text-slate-400">
+            按鍵盤 <kbd className="px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded border border-slate-600 text-[11px] font-mono">Esc</kbd> 或點擊視窗外背景亦可關閉
+          </span>
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs sm:text-sm font-semibold transition-colors border border-slate-600 cursor-pointer"
+            >
+              關閉預覽
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isGenerating}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center space-x-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              <span>下載 PDF</span>
+            </button>
+          </div>
         </div>
 
       </div>

@@ -11,12 +11,8 @@ import {
   ExternalLink,
   ShieldCheck,
   RefreshCw,
-  Lock,
-  Compass,
-  Train,
   Check,
-  Copy,
-  Info
+  Zap
 } from 'lucide-react';
 import { ApiKeysConfig } from '../types';
 
@@ -48,7 +44,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     error?: string;
   }>({
     valid: apiKeys.isGeminiValid,
-    message: apiKeys.isGeminiValid ? '金鑰已通過驗證' : undefined,
+    message: apiKeys.isGeminiValid ? '金鑰已通過驗證並已暫存' : undefined,
   });
 
   const [verifyingMaps, setVerifyingMaps] = useState(false);
@@ -58,7 +54,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     error?: string;
   }>({
     valid: apiKeys.isMapsValid,
-    message: apiKeys.isMapsValid ? '金鑰已通過驗證' : undefined,
+    message: apiKeys.isMapsValid ? '金鑰已通過驗證並已暫存' : undefined,
   });
 
   const [systemKeys, setSystemKeys] = useState<{
@@ -69,7 +65,17 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     hasServerMapsKey: false,
   });
 
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  // Handle Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isInitialGated) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, isInitialGated]);
 
   // Load initial values and check system environment keys
   useEffect(() => {
@@ -77,11 +83,11 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     setMapsKey(apiKeys.googleMapsApiKey || '');
     setGeminiStatus({
       valid: apiKeys.isGeminiValid,
-      message: apiKeys.isGeminiValid ? '金鑰已通過驗證' : undefined,
+      message: apiKeys.isGeminiValid ? '金鑰已通過驗證並已暫存' : undefined,
     });
     setMapsStatus({
       valid: apiKeys.isMapsValid,
-      message: apiKeys.isMapsValid ? '金鑰已通過驗證' : undefined,
+      message: apiKeys.isMapsValid ? '金鑰已通過驗證並已暫存' : undefined,
     });
 
     fetch('/api/system-key-status')
@@ -117,7 +123,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
       if (response.ok && data.valid) {
         setGeminiStatus({
           valid: true,
-          message: data.message || 'Gemini AI API Key 驗證成功！',
+          message: data.message || 'Gemini AI API Key 驗證成功！已暫存於記憶體，可立即開始使用。',
         });
       } else {
         setGeminiStatus({
@@ -160,7 +166,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
       if (response.ok && data.valid) {
         setMapsStatus({
           valid: true,
-          message: data.message || 'Google Maps API 金鑰驗證成功！',
+          message: data.message || 'Google Maps API 金鑰驗證成功！已暫存於記憶體。',
         });
       } else {
         setMapsStatus({
@@ -188,8 +194,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     }
   };
 
-  // 4. Save and Enter App
-  const handleSaveAndProceed = () => {
+  // 4. Temporary In-Memory Cache and Proceed
+  const handleTemporarySaveAndProceed = () => {
     const newConfig: ApiKeysConfig = {
       geminiApiKey: geminiKey.trim(),
       googleMapsApiKey: mapsKey.trim(),
@@ -199,20 +205,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
       mapsVerifiedAt: mapsStatus.valid ? new Date().toISOString() : apiKeys.mapsVerifiedAt,
     };
 
-    onSaveKeys(newConfig);
-    onClose();
-  };
-
-  // Quick helper to fill environment keys if user wants demo access
-  const handleUseServerDefaults = () => {
-    const newConfig: ApiKeysConfig = {
-      geminiApiKey: geminiKey.trim(),
-      googleMapsApiKey: mapsKey.trim(),
-      isGeminiValid: true,
-      isMapsValid: true,
-      geminiVerifiedAt: new Date().toISOString(),
-      mapsVerifiedAt: new Date().toISOString(),
-    };
+    // Stored in in-memory state only (not saved in localStorage)
     onSaveKeys(newConfig);
     onClose();
   };
@@ -220,14 +213,19 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   if (!isOpen) return null;
 
   const isGeminiReady = geminiStatus.valid || (geminiKey.trim().length > 10 && geminiStatus.valid !== false);
-  const isMapsReady = mapsStatus.valid || (mapsKey.trim().length > 10 && mapsStatus.valid !== false);
   const canProceed = (geminiKey.trim().length > 0 && isGeminiReady) || systemKeys.hasServerGeminiKey;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
+      onClick={() => {
+        if (!isInitialGated) onClose();
+      }}
+    >
       <div
         id="api-key-modal-card"
         className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white relative">
@@ -238,22 +236,24 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg sm:text-xl font-bold tracking-wide">
-                  API 金鑰授權與驗證中心
+                  API 金鑰授權與暫存中心
                 </h3>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 font-semibold">
-                  安全保證
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold">
+                  僅記憶體暫存・不存硬碟
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1">
-                請輸入並驗證 Gemini AI 與 Google Maps 金鑰以啟動鐵道旅遊規劃
+                驗證通過後僅於當前記憶體暫存，關閉分頁即自動釋放，安全無虞
               </p>
             </div>
           </div>
 
           {!isInitialGated && (
             <button
+              type="button"
               onClick={onClose}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              title="關閉 (Esc)"
             >
               ✕
             </button>
@@ -262,13 +262,13 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-          {/* Security Notice */}
-          <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-start space-x-3 text-xs text-slate-700">
-            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          {/* Security & In-Memory Privacy Notice */}
+          <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-start space-x-3 text-xs text-slate-700">
+            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="font-bold text-slate-900">金鑰安全儲存與隱私宣告</p>
-              <p className="text-slate-600 leading-relaxed">
-                您輸入的 API 金鑰僅會加密保存在您當前瀏覽器的本地空間 (Local Storage)，所有 AI 與地圖驗證請求皆透過安全伺服端通訊，絕不外流或挪作他用。
+              <p className="font-bold text-emerald-950">金鑰安全暫存與隱私宣告（不永久儲存）</p>
+              <p className="text-emerald-800 leading-relaxed">
+                您輸入與驗證的 API 金鑰<strong>僅會在當前工作階段中進行記憶體暫存</strong>，絕不會儲存至瀏覽器本地硬碟（Local Storage）。重新整理或關閉頁面後即自動清除，請安心使用。
               </p>
             </div>
           </div>
@@ -295,7 +295,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                 {geminiStatus.valid === true ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    驗證成功
+                    驗證成功 (已暫存)
                   </span>
                 ) : geminiStatus.valid === false ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
@@ -340,7 +340,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     type="button"
                     onClick={handleVerifyGemini}
                     disabled={verifyingGemini || !geminiKey.trim()}
-                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1"
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
                   >
                     {verifyingGemini ? (
                       <>
@@ -374,7 +374,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               {/* Helper Links */}
               <div className="flex items-center justify-between text-xs pt-1">
                 <span className="text-slate-500">
-                  用於驅動 Gemini 3.7 Flash 智能生成完整一日遊與隨身語音/文字導遊。
+                  用於驅動 Gemini 3.7 Flash 智能生成完整一日遊與隨身導遊。
                 </span>
                 <a
                   href="https://aistudio.google.com/app/apikey"
@@ -400,7 +400,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <span>Google Maps API Key</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                      地圖圖磚與導航
+                      選填 (地圖圖磚與導航)
                     </span>
                   </h4>
                 </div>
@@ -411,7 +411,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                 {mapsStatus.valid === true ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    驗證成功
+                    驗證成功 (已暫存)
                   </span>
                 ) : mapsStatus.valid === false ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
@@ -437,7 +437,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     setMapsKey(e.target.value);
                     setMapsStatus({});
                   }}
-                  placeholder="AIzaSy... (貼上 Google Maps API Key)"
+                  placeholder="AIzaSy... (貼上 Google Maps API Key，若無可留空)"
                   className="w-full pl-3.5 pr-24 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm font-mono transition-all text-slate-900 bg-white"
                 />
 
@@ -456,7 +456,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     type="button"
                     onClick={handleVerifyMaps}
                     disabled={verifyingMaps || !mapsKey.trim()}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1"
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
                   >
                     {verifyingMaps ? (
                       <>
@@ -490,7 +490,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               {/* Helper Links */}
               <div className="flex items-center justify-between text-xs pt-1">
                 <span className="text-slate-500">
-                  用於載入 Google Maps 原生地圖圖磚、路徑導航與景點定位。
+                  用於載入 Google Maps 原生地圖圖磚與路線導航。
                 </span>
                 <a
                   href="https://console.cloud.google.com/google/maps-apis/credentials"
@@ -514,10 +514,10 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               type="button"
               onClick={handleVerifyAll}
               disabled={verifyingGemini || verifyingMaps || (!geminiKey.trim() && !mapsKey.trim())}
-              className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 text-xs font-bold transition-all flex items-center space-x-1.5"
+              className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${verifyingGemini || verifyingMaps ? 'animate-spin' : ''}`} />
-              <span>一鍵驗證全部金鑰</span>
+              <span>一鍵驗證全部</span>
             </button>
           </div>
 
@@ -526,7 +526,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
               >
                 取消
               </button>
@@ -535,16 +535,16 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <button
               id="btn-save-and-unlock-app"
               type="button"
-              onClick={handleSaveAndProceed}
+              onClick={handleTemporarySaveAndProceed}
               disabled={!canProceed}
               className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
                 canProceed
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 active:scale-98 cursor-pointer'
+                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 active:scale-98 cursor-pointer'
                   : 'bg-slate-300 text-slate-500 cursor-not-allowed'
               }`}
             >
-              <ShieldCheck className="w-4 h-4" />
-              <span>儲存設定並開始使用</span>
+              <Zap className="w-4 h-4" />
+              <span>暫存金鑰並開始使用</span>
             </button>
           </div>
         </div>
