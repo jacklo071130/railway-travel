@@ -49,7 +49,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     '';
   const hasValidGoogleKey = Boolean(apiKey) && apiKey !== 'YOUR_API_KEY' && apiKey.length > 10;
 
-  const [mapMode, setMapMode] = useState<'osm' | 'google'>(hasValidGoogleKey ? 'google' : 'osm');
+  // Default to OpenStreetMap (zero-configuration interactive map)
+  const [mapMode, setMapMode] = useState<'osm' | 'google'>('osm');
   const [showStationsLayer, setShowStationsLayer] = useState(true);
   const [showKeyInstructions, setShowKeyInstructions] = useState(false);
 
