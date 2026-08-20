@@ -401,7 +401,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#FAF8E7] text-[#122B28] flex flex-col selection:bg-[#81D8CF] selection:text-[#0F3A35]">
       {/* Top Navigation */}
       <Navbar
         onOpenSaved={() => setIsSavedModalOpen(true)}
@@ -420,20 +420,20 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* API Key Status Notice Bar (if unconfigured) */}
         {(!apiKeys.isGeminiValid || !apiKeys.isMapsValid) && (
-          <div className="p-3.5 bg-gradient-to-r from-indigo-950/80 via-blue-950/70 to-slate-900 rounded-2xl border border-indigo-500/30 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
+          <div className="p-3.5 bg-[#F8F5D6] rounded-2xl border-2 border-[#81D8CF] flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
             <div className="flex items-center space-x-2.5">
-              <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                <Key className="w-4 h-4 text-indigo-400 animate-pulse" />
+              <div className="p-1.5 rounded-lg bg-[#81D8CF]/30 text-[#146E64] border border-[#81D8CF]">
+                <Key className="w-4 h-4 text-[#166E64] animate-pulse" />
               </div>
               <div>
-                <p className="font-bold text-white flex items-center gap-2">
+                <p className="font-bold text-[#122B28] flex items-center gap-2">
                   <span>API 金鑰授權狀態</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-[#166E64] font-bold border border-[#81D8CF]">
                     {apiKeys.isGeminiValid ? 'Gemini AI 已啟用' : 'Gemini AI 待驗證'} •{' '}
                     {apiKeys.isMapsValid ? 'Google Maps 已啟用' : 'Google Maps 待設定'}
                   </span>
                 </p>
-                <p className="text-slate-300 mt-0.5">
+                <p className="text-[#4E6864] mt-0.5">
                   輸入並驗證 Gemini AI 與 Google Maps API 金鑰，即可享受客製化智能行程與全台地圖導航。
                 </p>
               </div>
@@ -442,7 +442,7 @@ export default function App() {
             <button
               id="btn-banner-open-api-keys"
               onClick={() => setIsApiKeyModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all"
+              className="px-3.5 py-1.5 rounded-xl bg-[#1A8F82] hover:bg-[#13695F] text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
             >
               <Key className="w-3.5 h-3.5" />
               <span>設定與驗證 API 金鑰</span>
@@ -451,14 +451,14 @@ export default function App() {
         )}
         {/* Top Error Banner if any */}
         {errorMsg && (
-          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-amber-300 text-xs sm:text-sm">
+          <div className="p-4 bg-[#FFF9E6] border border-amber-400 rounded-2xl flex items-center justify-between text-amber-900 text-xs sm:text-sm shadow-sm">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
             <button
               onClick={() => setErrorMsg(null)}
-              className="text-slate-400 hover:text-white text-xs font-bold ml-2"
+              className="text-amber-800 hover:text-black text-xs font-bold ml-2 cursor-pointer"
             >
               ✕
             </button>
@@ -485,16 +485,16 @@ export default function App() {
 
             {/* Loading Indicator with Animated Steps */}
             {isLoadingItinerary && (
-              <div className="p-8 rounded-3xl bg-slate-900 border border-blue-500/30 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in duration-200">
-                <div className="w-16 h-16 rounded-full bg-blue-600/20 border-2 border-blue-400/40 flex items-center justify-center mx-auto text-blue-400 animate-spin">
-                  <Train className="w-8 h-8 text-blue-400" />
+              <div className="p-8 rounded-3xl bg-white border-2 border-[#81D8CF] shadow-2xl text-center space-y-4 animate-in fade-in zoom-in duration-200">
+                <div className="w-16 h-16 rounded-full bg-[#81D8CF]/20 border-2 border-[#81D8CF] flex items-center justify-center mx-auto text-[#1A8F82] animate-spin">
+                  <Train className="w-8 h-8 text-[#1A8F82]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
-                    <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+                  <h3 className="text-lg font-bold text-[#122B28] flex items-center justify-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
                     <span>AI 正在規劃【{originStation.name} ➔ {destinationStation.name}】一日遊行程</span>
                   </h3>
-                  <p className="text-sm text-blue-300 mt-2 font-medium">
+                  <p className="text-sm text-[#1A8F82] mt-2 font-bold">
                     {loadingStep || '正在計算最佳台鐵班次與順路景點...'}
                   </p>
                 </div>
@@ -505,15 +505,15 @@ export default function App() {
             {itinerary && !isLoadingItinerary && (
               <div ref={itineraryResultRef} className="space-y-6 animate-in fade-in duration-300">
                 {/* Map Section */}
-                <div className="bg-slate-900/60 rounded-3xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-3">
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E5DEAA] shadow-lg space-y-3">
                   <div className="flex items-center justify-between px-2">
                     <div className="flex items-center space-x-2">
-                      <Compass className="w-5 h-5 text-blue-400" />
-                      <h3 className="font-bold text-sm sm:text-base text-white">
+                      <Compass className="w-5 h-5 text-[#1A8F82]" />
+                      <h3 className="font-bold text-sm sm:text-base text-[#122B28]">
                         {itinerary.destinationStation.name}站 行程路線與景點地圖
                       </h3>
                     </div>
-                    <span className="text-xs text-slate-400 hidden sm:inline">
+                    <span className="text-xs text-[#546E6A] hidden sm:inline">
                       點擊標記可查看詳細資訊並啟動 Google Maps 導航
                     </span>
                   </div>
@@ -548,14 +548,14 @@ export default function App() {
         {/* Tab 2: Full Interactive Map */}
         {activeTab === 'map' && (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E5DEAA] shadow-sm">
               <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                <div className="p-2 rounded-xl bg-[#81D8CF]/20 text-[#1A8F82] border border-[#81D8CF]/50">
                   <Compass className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-base text-white">全台鐵道路網與觀光地圖</h2>
-                  <p className="text-xs text-slate-400">
+                  <h2 className="font-bold text-base text-[#122B28]">全台鐵道路網與觀光地圖</h2>
+                  <p className="text-xs text-[#546E6A]">
                     目前選定主要核心：{destinationStation.name}火車站 ({destinationStation.county})
                   </p>
                 </div>
@@ -564,7 +564,7 @@ export default function App() {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setActiveTab('planner')}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1A8F82] hover:bg-[#13695F] text-white text-xs font-bold transition-all cursor-pointer shadow-sm"
                 >
                   前往行程規劃
                 </button>
@@ -600,20 +600,20 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 py-6 text-center text-xs text-slate-500 mt-12">
+      <footer className="bg-[#F8F5D6] border-t border-[#E5DEAA] py-6 text-center text-xs text-[#546E6A] mt-12">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400 font-medium">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[#122B28] font-semibold">
             <span>國營臺灣鐵路 (TRA) 官方網站：</span>
             <a
               href="https://www.railway.gov.tw/tra-tip-web/tip"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-400 hover:underline inline-flex items-center gap-1"
+              className="text-[#1A8F82] hover:underline inline-flex items-center gap-1 font-bold"
             >
               https://www.railway.gov.tw/tra-tip-web/tip
             </a>
           </div>
-          <p>© {new Date().getFullYear()} 台灣鐵道漫遊 Taiwan Railway Travel Planner • 整合 AI 智能行程與 Google Maps 導航</p>
+          <p className="text-[#647C78]">© {new Date().getFullYear()} 台灣鐵道漫遊 Taiwan Railway Travel Planner • 整合 AI 智能行程與 Google Maps 導航</p>
         </div>
       </footer>
 

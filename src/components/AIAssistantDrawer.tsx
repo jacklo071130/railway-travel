@@ -97,16 +97,16 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white shadow-2xl border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-200">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white shadow-2xl border-l border-[#E5DEAA] flex flex-col animate-in slide-in-from-right duration-200">
       {/* Drawer Header */}
-      <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white flex items-center justify-between shadow-md">
+      <div className="p-4 bg-gradient-to-r from-[#0F3A35] via-[#13695F] to-[#1A8F82] text-white flex items-center justify-between shadow-md border-b border-[#81D8CF]/30">
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-amber-300">
+          <div className="w-9 h-9 rounded-xl bg-[#81D8CF]/20 border border-[#81D8CF]/40 flex items-center justify-center text-[#F8F5D6]">
             <Sparkles className="w-5 h-5 animate-pulse" />
           </div>
           <div>
             <h3 className="font-bold text-sm sm:text-base">台鐵隨身 AI 導遊</h3>
-            <p className="text-xs text-blue-200/80">
+            <p className="text-xs text-[#FAF8E7]/90">
               {station.name}站 旅遊即時問答
             </p>
           </div>
@@ -114,14 +114,14 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
 
         <button
           onClick={onClose}
-          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Messages List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAF8E7]/50">
         {messages.map((msg) => {
           const isAI = msg.role === 'assistant';
           return (
@@ -132,8 +132,8 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs ${
                   isAI
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-white'
+                    ? 'bg-[#1A8F82] text-white'
+                    : 'bg-[#0F3A35] text-white'
                 }`}
               >
                 {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -143,8 +143,8 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
                 <div
                   className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm ${
                     isAI
-                      ? 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-sm'
-                      : 'bg-blue-600 text-white rounded-tr-sm'
+                      ? 'bg-white text-[#122B28] border border-[#E5DEAA] rounded-tl-sm'
+                      : 'bg-[#1A8F82] text-white rounded-tr-sm'
                   }`}
                 >
                   <p className="whitespace-pre-line">{msg.content}</p>
@@ -153,13 +153,13 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
                 {/* Suggested Follow-up chips */}
                 {isAI && msg.suggestedActions && msg.suggestedActions.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    <span className="text-[10px] font-bold text-slate-400 block">推薦追問：</span>
+                    <span className="text-[10px] font-bold text-[#546E6A] block">推薦追問：</span>
                     <div className="flex flex-wrap gap-1.5">
                       {msg.suggestedActions.map((action, i) => (
                         <button
                           key={i}
                           onClick={() => handleSendMessage(action)}
-                          className="text-[11px] px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-left transition-colors"
+                          className="text-[11px] px-2.5 py-1 rounded-lg bg-[#E5FAF7] hover:bg-[#B6F5EF] text-[#13695F] border border-[#81D8CF]/60 text-left transition-colors cursor-pointer"
                         >
                           {action}
                         </button>
@@ -168,7 +168,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
                   </div>
                 )}
 
-                <span className="text-[10px] text-slate-400 block px-1">
+                <span className="text-[10px] text-[#78928E] block px-1">
                   {msg.timestamp}
                 </span>
               </div>
@@ -177,8 +177,8 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
         })}
 
         {isLoading && (
-          <div className="flex items-center space-x-2 text-slate-500 text-xs p-2">
-            <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+          <div className="flex items-center space-x-2 text-[#546E6A] text-xs p-2">
+            <RefreshCw className="w-4 h-4 animate-spin text-[#1A8F82]" />
             <span>AI 導遊正在為您查詢整理中...</span>
           </div>
         )}
@@ -187,7 +187,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
       </div>
 
       {/* Input Form */}
-      <div className="p-3 bg-white border-t border-slate-200">
+      <div className="p-3 bg-white border-t border-[#E5DEAA]">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -200,23 +200,23 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
             placeholder={`詢問 ${station.name}站 景點、美食或台鐵指南...`}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            className="flex-1 text-xs sm:text-sm bg-slate-100 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500"
+            className="flex-1 text-xs sm:text-sm bg-[#FAF8E7] rounded-xl px-3.5 py-2.5 border border-[#E5DEAA] text-[#122B28] placeholder-[#78928E] focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#81D8CF]"
           />
           <button
             type="submit"
             disabled={!inputMessage.trim() || isLoading}
-            className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold disabled:opacity-50 transition-all shadow-md shadow-blue-500/20"
+            className="p-2.5 rounded-xl bg-[#1A8F82] hover:bg-[#13695F] text-white font-bold disabled:opacity-50 transition-all shadow-md shadow-[#81D8CF]/30 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
-        <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 px-1">
+        <div className="flex items-center justify-between text-[10px] text-[#78928E] mt-1.5 px-1">
           <span>支援即時推薦與行程微調</span>
           <a
             href="https://www.railway.gov.tw/tra-tip-web/tip"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline flex items-center gap-0.5"
+            className="text-[#13695F] hover:underline flex items-center gap-0.5"
           >
             <span>台鐵官網</span>
             <ExternalLink className="w-2.5 h-2.5" />

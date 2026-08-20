@@ -217,32 +217,32 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F3A35]/80 backdrop-blur-md overflow-y-auto"
       onClick={() => {
         if (!isInitialGated) onClose();
       }}
     >
       <div
         id="api-key-modal-card"
-        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#E5DEAA] overflow-hidden flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white relative">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-[#0F3A35] via-[#13695F] to-[#1A8F82] text-white relative border-b border-[#81D8CF]/30">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center shadow-inner">
-              <Key className="w-6 h-6 text-blue-300" />
+            <div className="w-12 h-12 rounded-xl bg-[#81D8CF]/25 border border-[#81D8CF]/40 flex items-center justify-center shadow-inner">
+              <Key className="w-6 h-6 text-[#F8F5D6]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg sm:text-xl font-bold tracking-wide">
                   API 金鑰授權與暫存中心
                 </h3>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#81D8CF]/30 text-[#FAF8E7] border border-[#81D8CF]/50 font-semibold">
                   僅記憶體暫存・不存硬碟
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-[#FAF8E7]/85 mt-1">
                 驗證通過後僅於當前記憶體暫存，關閉分頁即自動釋放，安全無虞
               </p>
             </div>
@@ -252,7 +252,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              className="absolute top-5 right-5 text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               title="關閉 (Esc)"
             >
               ✕
@@ -261,29 +261,29 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto bg-[#FAF8E7]/30">
           {/* Security & In-Memory Privacy Notice */}
-          <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-start space-x-3 text-xs text-slate-700">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-xl bg-[#E5FAF7] border border-[#81D8CF]/50 flex items-start space-x-3 text-xs text-[#122B28]">
+            <ShieldCheck className="w-5 h-5 text-[#1A8F82] shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="font-bold text-emerald-950">金鑰安全暫存與隱私宣告（不永久儲存）</p>
-              <p className="text-emerald-800 leading-relaxed">
+              <p className="font-bold text-[#0F3A35]">金鑰安全暫存與隱私宣告（不永久儲存）</p>
+              <p className="text-[#13695F] leading-relaxed">
                 您輸入與驗證的 API 金鑰<strong>僅會在當前工作階段中進行記憶體暫存</strong>，絕不會儲存至瀏覽器本地硬碟（Local Storage）。重新整理或關閉頁面後即自動清除，請安心使用。
               </p>
             </div>
           </div>
 
           {/* Section 1: Gemini AI API Key */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF8E7]/60 border border-[#E5DEAA] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                <div className="w-7 h-7 rounded-lg bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]/40 flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4 text-[#1A8F82]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-[#122B28] flex items-center gap-2">
                     <span>Gemini AI API Key</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]/30 font-semibold">
                       必要 (AI 行程與導遊)
                     </span>
                   </h4>
@@ -293,8 +293,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               {/* Status Pill */}
               <div>
                 {geminiStatus.valid === true ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#1A8F82]" />
                     驗證成功 (已暫存)
                   </span>
                 ) : geminiStatus.valid === false ? (
@@ -303,7 +303,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     驗證失敗
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-[#FAF8E7] text-[#546E6A] border border-[#E5DEAA]">
                     待驗證
                   </span>
                 )}
@@ -322,14 +322,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     setGeminiStatus({});
                   }}
                   placeholder="AIzaSy... (貼上 Google Gemini API Key)"
-                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm font-mono transition-all text-slate-900 bg-white"
+                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl border border-[#E5DEAA] focus:border-[#1A8F82] focus:ring-2 focus:ring-[#81D8CF]/30 outline-none text-sm font-mono transition-all text-[#122B28] bg-white placeholder-[#78928E]"
                 />
 
                 <div className="absolute right-2 flex items-center space-x-1">
                   <button
                     type="button"
                     onClick={() => setShowGeminiKey(!showGeminiKey)}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                    className="p-1.5 text-[#546E6A] hover:text-[#122B28] rounded-lg hover:bg-[#FAF8E7] transition-colors cursor-pointer"
                     title={showGeminiKey ? '隱藏金鑰' : '顯示金鑰'}
                   >
                     {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -340,7 +340,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     type="button"
                     onClick={handleVerifyGemini}
                     disabled={verifyingGemini || !geminiKey.trim()}
-                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[#1A8F82] hover:bg-[#13695F] disabled:bg-[#E5DEAA] disabled:text-[#78928E] text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
                   >
                     {verifyingGemini ? (
                       <>
@@ -359,8 +359,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
               {/* Feedback messages */}
               {geminiStatus.message && (
-                <p className="text-xs text-emerald-700 font-medium flex items-center gap-1 mt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <p className="text-xs text-[#13695F] font-medium flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#1A8F82]" />
                   {geminiStatus.message}
                 </p>
               )}
@@ -373,14 +373,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
               {/* Helper Links */}
               <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-slate-500">
+                <span className="text-[#546E6A]">
                   用於驅動 Gemini 3.7 Flash 智能生成完整一日遊與隨身導遊。
                 </span>
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline shrink-0"
+                  className="text-[#13695F] hover:text-[#0F3A35] font-semibold inline-flex items-center gap-1 hover:underline shrink-0"
                 >
                   <span>免費領取 Gemini Key</span>
                   <ExternalLink className="w-3 h-3" />
@@ -390,16 +390,16 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           </div>
 
           {/* Section 2: Google Maps API Key */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF8E7]/60 border border-[#E5DEAA] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
+                <div className="w-7 h-7 rounded-lg bg-[#FAF8E7] text-[#8C7C20] border border-[#E5DEAA] flex items-center justify-center font-bold">
+                  <MapPin className="w-4 h-4 text-[#8C7C20]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-[#122B28] flex items-center gap-2">
                     <span>Google Maps API Key</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FAF8E7] text-[#665A15] border border-[#E5DEAA] font-semibold">
                       選填 (地圖圖磚與導航)
                     </span>
                   </h4>
@@ -409,8 +409,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               {/* Status Pill */}
               <div>
                 {mapsStatus.valid === true ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#1A8F82]" />
                     驗證成功 (已暫存)
                   </span>
                 ) : mapsStatus.valid === false ? (
@@ -419,7 +419,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     驗證失敗
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-[#FAF8E7] text-[#546E6A] border border-[#E5DEAA]">
                     待驗證
                   </span>
                 )}
@@ -438,14 +438,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     setMapsStatus({});
                   }}
                   placeholder="AIzaSy... (貼上 Google Maps API Key，若無可留空)"
-                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm font-mono transition-all text-slate-900 bg-white"
+                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl border border-[#E5DEAA] focus:border-[#1A8F82] focus:ring-2 focus:ring-[#81D8CF]/30 outline-none text-sm font-mono transition-all text-[#122B28] bg-white placeholder-[#78928E]"
                 />
 
                 <div className="absolute right-2 flex items-center space-x-1">
                   <button
                     type="button"
                     onClick={() => setShowMapsKey(!showMapsKey)}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                    className="p-1.5 text-[#546E6A] hover:text-[#122B28] rounded-lg hover:bg-[#FAF8E7] transition-colors cursor-pointer"
                     title={showMapsKey ? '隱藏金鑰' : '顯示金鑰'}
                   >
                     {showMapsKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -456,7 +456,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                     type="button"
                     onClick={handleVerifyMaps}
                     disabled={verifyingMaps || !mapsKey.trim()}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[#1A8F82] hover:bg-[#13695F] disabled:bg-[#E5DEAA] disabled:text-[#78928E] text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
                   >
                     {verifyingMaps ? (
                       <>
@@ -475,8 +475,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
               {/* Feedback messages */}
               {mapsStatus.message && (
-                <p className="text-xs text-emerald-700 font-medium flex items-center gap-1 mt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <p className="text-xs text-[#13695F] font-medium flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#1A8F82]" />
                   {mapsStatus.message}
                 </p>
               )}
@@ -489,14 +489,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
               {/* Helper Links */}
               <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-slate-500">
+                <span className="text-[#546E6A]">
                   用於載入 Google Maps 原生地圖圖磚與路線導航。
                 </span>
                 <a
                   href="https://console.cloud.google.com/google/maps-apis/credentials"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-emerald-600 hover:text-emerald-800 font-semibold inline-flex items-center gap-1 hover:underline shrink-0"
+                  className="text-[#13695F] hover:text-[#0F3A35] font-semibold inline-flex items-center gap-1 hover:underline shrink-0"
                 >
                   <span>Google Cloud 憑證中心</span>
                   <ExternalLink className="w-3 h-3" />
@@ -507,16 +507,16 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="p-4 sm:p-6 bg-[#FAF8E7] border-t border-[#E5DEAA] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <button
               id="btn-verify-all-keys"
               type="button"
               onClick={handleVerifyAll}
               disabled={verifyingGemini || verifyingMaps || (!geminiKey.trim() && !mapsKey.trim())}
-              className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F8F5D6] border border-[#E5DEAA] disabled:opacity-50 text-[#122B28] text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${verifyingGemini || verifyingMaps ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[#1A8F82] ${verifyingGemini || verifyingMaps ? 'animate-spin' : ''}`} />
               <span>一鍵驗證全部</span>
             </button>
           </div>
@@ -526,7 +526,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-[#E5DEAA] hover:bg-[#F8F5D6] text-[#546E6A] hover:text-[#122B28] text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
               >
                 取消
               </button>
@@ -539,8 +539,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               disabled={!canProceed}
               className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
                 canProceed
-                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 active:scale-98 cursor-pointer'
-                  : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-[#13695F] via-[#1A8F82] to-[#5EC9BD] hover:from-[#0F3A35] hover:to-[#1A8F82] text-white shadow-[#81D8CF]/40 active:scale-98 cursor-pointer'
+                  : 'bg-[#E5DEAA] text-[#78928E] cursor-not-allowed'
               }`}
             >
               <Zap className="w-4 h-4" />

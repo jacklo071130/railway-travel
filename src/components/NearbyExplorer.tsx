@@ -67,24 +67,24 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
   return (
     <div className="space-y-6">
       {/* Station Overview Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl">
+      <div className="bg-gradient-to-r from-[#0F3A35] via-[#13695F] to-[#1A8F82] rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-[#81D8CF]/30">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/30 text-blue-300 text-xs font-semibold border border-blue-400/30">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#81D8CF]/30 text-[#FAF8E7] text-xs font-semibold border border-[#81D8CF]/40">
                 {station.line}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-400/30">
+              <span className="px-2 py-0.5 rounded-full bg-[#FAF8E7]/20 text-[#FAF8E7] text-xs font-semibold border border-[#E5DEAA]/50">
                 {station.gradeLabel}
               </span>
-              <span className="text-xs text-slate-300">
+              <span className="text-xs text-[#FAF8E7]/80">
                 {station.county} • 站碼: {station.id}
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white">
               {station.name}火車站 周邊美食景點探索
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#FAF8E7]/90 mt-2 max-w-2xl leading-relaxed">
               {station.description}
             </p>
           </div>
@@ -93,9 +93,9 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
             {onPlanTripToStation && (
               <button
                 onClick={() => onPlanTripToStation(station)}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-1.5 transition-all"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#5EC9BD] to-[#81D8CF] hover:brightness-105 text-[#0F3A35] font-bold text-xs sm:text-sm shadow-md flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
+                <Sparkles className="w-4 h-4 text-[#8C7C20]" />
                 <span>以{station.name}站規劃一日遊</span>
               </button>
             )}
@@ -106,52 +106,52 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
               rel="noopener noreferrer"
               className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold border border-white/20 flex items-center justify-center space-x-1.5 transition-colors"
             >
-              <Navigation className="w-4 h-4 text-emerald-400" />
+              <Navigation className="w-4 h-4 text-[#81D8CF]" />
               <span>Google Maps 地圖定位</span>
             </a>
           </div>
         </div>
 
         {/* Station Facilities */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10 text-xs">
-          <div className="flex items-center space-x-2 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/15 text-xs">
+          <div className="flex items-center space-x-2 text-[#FAF8E7]">
+            <span className="w-2 h-2 rounded-full bg-[#81D8CF]" />
             <span>YouBike 2.0: {station.hasYouBike ? '站前設有站點' : '周邊轉乘公車'}</span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-blue-400" />
+          <div className="flex items-center space-x-2 text-[#FAF8E7]">
+            <span className="w-2 h-2 rounded-full bg-[#81D8CF]" />
             <span>自動寄物櫃: {station.hasLuggageLocker ? '站內提供' : '站內服務台洽詢'}</span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-amber-400" />
+          <div className="flex items-center space-x-2 text-[#FAF8E7]">
+            <span className="w-2 h-2 rounded-full bg-[#F8F5D6]" />
             <span>台鐵便當: 站內/周邊老店供應</span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-purple-400" />
+          <div className="flex items-center space-x-2 text-[#FAF8E7]">
+            <span className="w-2 h-2 rounded-full bg-[#5EC9BD]" />
             <span>公車接駁: 站前客運總站</span>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#E5DEAA] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setActiveCategory('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
               activeCategory === 'all'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                ? 'bg-[#1A8F82] text-white shadow-sm'
+                : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] border border-[#E5DEAA]'
             }`}
           >
             全部推薦 ({items.length})
           </button>
           <button
             onClick={() => setActiveCategory('food')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors cursor-pointer ${
               activeCategory === 'food'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                ? 'bg-[#8C7C20] text-white shadow-sm'
+                : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] border border-[#E5DEAA]'
             }`}
           >
             <Utensils className="w-3.5 h-3.5" />
@@ -159,10 +159,10 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
           </button>
           <button
             onClick={() => setActiveCategory('spot')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors cursor-pointer ${
               activeCategory === 'spot'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                ? 'bg-[#13695F] text-white shadow-sm'
+                : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] border border-[#E5DEAA]'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
@@ -170,10 +170,10 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
           </button>
           <button
             onClick={() => setActiveCategory('souvenir')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors cursor-pointer ${
               activeCategory === 'souvenir'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                ? 'bg-[#1A8F82] text-white shadow-sm'
+                : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] border border-[#E5DEAA]'
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
@@ -183,13 +183,13 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#78928E] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="搜尋站周邊美食或景點..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#FAF8E7] border border-[#E5DEAA] rounded-xl text-[#122B28] placeholder-[#78928E] focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#81D8CF]"
           />
         </div>
       </div>
@@ -200,34 +200,34 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
           const isFood = item.category === 'food';
           const isSpot = item.category === 'spot';
           const badgeClass = isFood
-            ? 'bg-amber-50 text-amber-700 border-amber-200'
+            ? 'bg-[#FAF8E7] text-[#665A15] border-[#E5DEAA]'
             : isSpot
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-purple-50 text-purple-700 border-purple-200';
+            ? 'bg-[#E5FAF7] text-[#13695F] border-[#81D8CF]/50'
+            : 'bg-[#FAF8E7] text-[#8C7C20] border-[#E5DEAA]';
 
           return (
             <div
               key={item.id}
-              className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all flex flex-col justify-between"
+              className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-[#E5DEAA] transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${badgeClass}`}>
                     {item.categoryName}
                   </span>
-                  <div className="flex items-center space-x-1 text-amber-500 text-xs font-bold">
+                  <div className="flex items-center space-x-1 text-[#8C7C20] text-xs font-bold">
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span>{item.rating.toFixed(1)}</span>
                   </div>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 mb-1">{item.name}</h3>
-                <p className="text-xs text-slate-500 mb-3 leading-relaxed">{item.description}</p>
+                <h3 className="text-base font-bold text-[#122B28] mb-1">{item.name}</h3>
+                <p className="text-xs text-[#546E6A] mb-3 leading-relaxed">{item.description}</p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-slate-400" />
+              <div className="pt-3 border-t border-[#E5DEAA]/60 flex items-center justify-between">
+                <span className="text-xs text-[#78928E] flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[#1A8F82]" />
                   {item.distance}
                 </span>
 
@@ -235,7 +235,7 @@ export const NearbyExplorer: React.FC<NearbyExplorerProps> = ({ station, onPlanT
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.googleQuery)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 text-xs font-bold flex items-center space-x-1 transition-all active:scale-95"
+                  className="px-3 py-1.5 rounded-xl bg-[#FAF8E7] hover:bg-[#1A8F82] hover:text-white text-[#122B28] border border-[#E5DEAA] text-xs font-bold flex items-center space-x-1 transition-all active:scale-95"
                 >
                   <Navigation className="w-3 h-3" />
                   <span>Google 導航</span>

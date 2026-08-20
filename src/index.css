@@ -1,5 +1,46 @@
 @import "tailwindcss";
 
+:root {
+  --tiffany-blue: #81D8CF;
+  --tiffany-light: #E5FAF7;
+  --tiffany-medium: #5EC9BD;
+  --tiffany-dark: #1A8F82;
+  --tiffany-deep: #13695F;
+  --tiffany-navy: #0F3A35;
+
+  --cheese-cream: #F8F5D6;
+  --cheese-light: #FAF8E7;
+  --cheese-soft: #FCFBEF;
+  --cheese-medium: #ECE6AC;
+  --cheese-dark: #8C7C20;
+  --cheese-deep: #665A15;
+
+  --app-text-primary: #122B28;
+  --app-text-secondary: #4E6864;
+}
+
+body {
+  background-color: var(--cheese-light);
+  color: var(--app-text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F5D6;
+}
+::-webkit-scrollbar-thumb {
+  background: #81D8CF;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5EC9BD;
+}
+
 /* Leaflet Container & Marker fixes */
 .leaflet-container {
   width: 100% !important;
@@ -47,3 +88,4 @@
     page-break-inside: avoid;
   }
 }
+
