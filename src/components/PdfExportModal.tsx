@@ -325,6 +325,24 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                     <span className="text-[#81D8CF]">➔</span>
                     <span>{itinerary.destinationStation.name} {outbound.arrivalTime} 到</span>
                   </div>
+
+                  {outbound.isDirect === false || (outbound.transferCount && outbound.transferCount > 0) ? (
+                    <div className="text-[11px] text-[#8C7C20] bg-[#FAF8E7] p-1.5 rounded mt-2 border border-[#E5DEAA]">
+                      <strong>🔄 需轉乘 {outbound.transferCount || 1} 次：</strong>於【{outbound.transferStations?.join('、') || '轉乘站'}】轉車
+                      {outbound.legs && outbound.legs.length > 0 && (
+                        <div className="mt-1 space-y-0.5 text-[10px] text-[#546E6A]">
+                          {outbound.legs.map((l, li) => (
+                            <div key={li}>• 第{l.legIndex || li+1}段: {l.fromStation}➔{l.toStation} ({l.trainType} {l.trainNo}, {l.departureTime}開➔{l.arrivalTime}到)</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-[#13695F] bg-[#E5FAF7] px-1.5 py-0.5 rounded mt-1.5 border border-[#81D8CF]/30">
+                      🟢 直達列車・免轉乘
+                    </div>
+                  )}
+
                   <div className="text-[11px] text-[#546E6A] mt-1.5 flex justify-between border-t border-[#E5DEAA]/60 pt-1">
                     <span>單程票價約 NT$ {outbound.fareEstimate}</span>
                     <span className="text-[#78928E]">{outbound.features || '對號座/區間'}</span>
@@ -347,6 +365,24 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                     <span className="text-[#81D8CF]">➔</span>
                     <span>{itinerary.originStation.name} {inbound.arrivalTime} 到</span>
                   </div>
+
+                  {inbound.isDirect === false || (inbound.transferCount && inbound.transferCount > 0) ? (
+                    <div className="text-[11px] text-[#8C7C20] bg-[#FAF8E7] p-1.5 rounded mt-2 border border-[#E5DEAA]">
+                      <strong>🔄 需轉乘 {inbound.transferCount || 1} 次：</strong>於【{inbound.transferStations?.join('、') || '轉乘站'}】轉車
+                      {inbound.legs && inbound.legs.length > 0 && (
+                        <div className="mt-1 space-y-0.5 text-[10px] text-[#546E6A]">
+                          {inbound.legs.map((l, li) => (
+                            <div key={li}>• 第{l.legIndex || li+1}段: {l.fromStation}➔{l.toStation} ({l.trainType} {l.trainNo}, {l.departureTime}開➔{l.arrivalTime}到)</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-[#13695F] bg-[#E5FAF7] px-1.5 py-0.5 rounded mt-1.5 border border-[#81D8CF]/30">
+                      🟢 直達列車・免轉乘
+                    </div>
+                  )}
+
                   <div className="text-[11px] text-[#546E6A] mt-1.5 flex justify-between border-t border-[#E5DEAA]/60 pt-1">
                     <span>單程票價約 NT$ {inbound.fareEstimate}</span>
                     <span className="text-[#78928E]">{inbound.features || '舒適返程'}</span>

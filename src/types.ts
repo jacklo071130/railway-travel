@@ -60,6 +60,20 @@ export interface ItineraryStop {
   photoUrl?: string;
 }
 
+export interface TrainLeg {
+  legIndex: number;
+  trainType: string;
+  trainNo: string;
+  fromStation: string;
+  toStation: string;
+  departureTime: string;
+  arrivalTime: string;
+  durationText?: string;
+  fareEstimate?: number;
+  transferWaitMinutes?: number;
+  note?: string;
+}
+
 export interface TrainTripOption {
   optionLabel?: string; // 如：主力推薦、早鳥首選、彈性出發、晚間賦歸
   trainType: string;
@@ -69,6 +83,11 @@ export interface TrainTripOption {
   fareEstimate: number;
   durationText: string;
   features?: string;
+  isDirect?: boolean; // 是否為直達車（true: 直達, false: 需轉乘）
+  transferCount?: number; // 轉乘次數 (0: 直達, 1: 轉乘1次, 2: 轉乘2次)
+  transferStations?: string[]; // 轉乘站點清單，如 ['瑞芳']、['二水']、['竹中']
+  transferSummary?: string; // 轉乘摘要說明，如「直達車・無須轉乘」或「於【瑞芳站】轉乘 平溪線 4712次（轉乘等候 12 分鐘）」
+  legs?: TrainLeg[]; // 詳細各區間乘車與轉乘資訊
 }
 
 export interface DayItinerary {

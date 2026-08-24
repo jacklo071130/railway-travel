@@ -21,9 +21,14 @@ import {
   Car,
   DollarSign,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  GitMerge,
+  ArrowRight,
+  Route,
+  Layers,
+  ArrowDown
 } from 'lucide-react';
-import { DayItinerary, ItineraryStop } from '../types';
+import { DayItinerary, ItineraryStop, TrainTripOption } from '../types';
 import confetti from 'canvas-confetti';
 
 interface ItineraryViewProps {
@@ -118,14 +123,26 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   const activeInbound = inboundList[selectedInboundIdx] || inboundList[0];
 
   const handleCopyText = () => {
+    const formatOption = (t: TrainTripOption, i: number, isSelected: boolean) => {
+      const transitText = t.isDirect === false || (t.transferCount && t.transferCount > 0)
+        ? ` [🔄需轉乘${t.transferCount || 1}次: 於${t.transferStations?.join('、') || '轉乘站'}換車 | ${t.transferSummary || ''}]`
+        : ' [🟢直達車・無須轉乘]';
+      
+      const legsText = t.legs && t.legs.length > 0
+        ? `\n     各區間明細: ` + t.legs.map(l => `第${l.legIndex}段: ${l.fromStation}➔${l.toStation} (${l.trainType} ${l.trainNo}, ${l.departureTime}開➔${l.arrivalTime}到${l.transferWaitMinutes ? `, 轉乘等候${l.transferWaitMinutes}分` : ''})`).join(' ➔ ')
+        : '';
+
+      return `  [${t.optionLabel || `時段${i+1}`}] ${t.trainType} ${t.trainNo} (${t.departureTime}➔${t.arrivalTime}, 約NT$${t.fareEstimate})${transitText}${isSelected ? ' ★已選定' : ''}${legsText}`;
+    };
+
     const outboundSummary = outboundList
-      .map((t, i) => `  [${t.optionLabel || `時段${i+1}`}] ${t.trainType} ${t.trainNo} (${t.departureTime}➔${t.arrivalTime}, 約NT$${t.fareEstimate})${i === selectedOutboundIdx ? ' ★已選' : ''}`)
+      .map((t, i) => formatOption(t, i, i === selectedOutboundIdx))
       .join('\n');
     const inboundSummary = inboundList
-      .map((t, i) => `  [${t.optionLabel || `時段${i+1}`}] ${t.trainType} ${t.trainNo} (${t.departureTime}➔${t.arrivalTime}, 約NT$${t.fareEstimate})${i === selectedInboundIdx ? ' ★已選' : ''}`)
+      .map((t, i) => formatOption(t, i, i === selectedInboundIdx))
       .join('\n');
 
-    const text = `🚂【${itinerary.title}】\n📅 旅遊日期：${itinerary.travelDate}\n💰 預估人均花費：約 NT$ ${itinerary.estimatedTotalBudget}\n\n🚆【台鐵去程推薦班次 (3班時段)】\n${outboundSummary}\n\n🚆【台鐵回程推薦班次 (3班時段)】\n${inboundSummary}\n\n🗺️【一日遊行程時間表】\n${itinerary.stops
+    const text = `🚂【${itinerary.title}】\n📅 旅遊日期：${itinerary.travelDate}\n💰 預估人均花費：約 NT$ ${itinerary.estimatedTotalBudget}\n\n🚆【台鐵去程推薦班次與轉乘指引 (3班時段)】\n${outboundSummary}\n\n🚆【台鐵回程推薦班次與轉乘指引 (3班時段)】\n${inboundSummary}\n\n🗺️【一日遊行程時間表】\n${itinerary.stops
       .map(
         (s, idx) =>
           `${idx + 1}. [${s.timeSlot}] ${s.placeName} (${s.highlight})\n   📍 地址：${s.address}\n   🚶 交通：${s.transportFromPrevious.durationText} - ${s.transportFromPrevious.details}\n   💡 導遊貼士：${s.tips || ''}`
@@ -403,15 +420,28 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                   {itinerary.originStation.name} ➔ {itinerary.destinationStation.name}
                 </span>
               </div>
-              <span className="text-xs text-[#13695F] font-semibold bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/30">
-                目前選定：{activeOutbound.optionLabel || `方案 ${selectedOutboundIdx + 1}`} ({activeOutbound.departureTime} 開)
-              </span>
+              <div className="flex items-center gap-2">
+                {activeOutbound.isDirect === false || (activeOutbound.transferCount && activeOutbound.transferCount > 0) ? (
+                  <span className="text-[11px] text-[#8C7C20] font-bold bg-[#FAF8E7] px-2 py-0.5 rounded-md border border-[#E5DEAA] flex items-center gap-1">
+                    <GitMerge className="w-3 h-3 text-[#8C7C20]" />
+                    <span>需轉乘 {activeOutbound.transferCount || 1} 次 ({activeOutbound.transferStations?.join('、') || '轉乘站'})</span>
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-[#13695F] font-semibold bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/40">
+                    🟢 直達車・免轉乘
+                  </span>
+                )}
+                <span className="text-xs text-[#13695F] font-semibold bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/30">
+                  目前選定：{activeOutbound.optionLabel || `方案 ${selectedOutboundIdx + 1}`} ({activeOutbound.departureTime} 開)
+                </span>
+              </div>
             </div>
 
             {/* 3 Outbound Option Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {outboundList.map((train, idx) => {
                 const isSelected = idx === selectedOutboundIdx;
+                const isTransfer = train.isDirect === false || (train.transferCount && train.transferCount > 0);
                 return (
                   <button
                     key={`outbound-${idx}`}
@@ -450,6 +480,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                         {train.trainNo}
                       </div>
 
+                      {/* Transit indicator tag */}
+                      <div className="mt-1">
+                        {isTransfer ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#8C7C20] bg-[#FAF8E7] px-1.5 py-0.5 rounded border border-[#E5DEAA]">
+                            <GitMerge className="w-2.5 h-2.5" />
+                            <span>轉乘 {train.transferCount || 1} 次 ({train.transferStations?.join('、') || '轉乘站'})</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#13695F] bg-[#E5FAF7] px-1.5 py-0.5 rounded border border-[#81D8CF]/40">
+                            <span>直達列車</span>
+                          </span>
+                        )}
+                      </div>
+
                       <div className="flex items-center justify-between mt-2.5 text-xs">
                         <div>
                           <span className="text-[10px] text-[#78928E] block">{itinerary.originStation.name} 開</span>
@@ -471,9 +515,9 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                       <span className="font-bold text-[#13695F]">NT$ {train.fareEstimate}</span>
                     </div>
 
-                    {train.features && (
+                    {(train.transferSummary || train.features) && (
                       <div className="mt-1.5 text-[10px] text-[#4E6864] bg-[#FAF8E7] rounded px-1.5 py-0.5 truncate border border-[#E5DEAA]/50">
-                        {train.features}
+                        {train.transferSummary || train.features}
                       </div>
                     )}
                   </button>
@@ -494,15 +538,28 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                   {itinerary.destinationStation.name} ➔ {itinerary.originStation.name}
                 </span>
               </div>
-              <span className="text-xs text-[#13695F] font-semibold bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/30">
-                目前選定：{activeInbound.optionLabel || `方案 ${selectedInboundIdx + 1}`} ({activeInbound.departureTime} 開)
-              </span>
+              <div className="flex items-center gap-2">
+                {activeInbound.isDirect === false || (activeInbound.transferCount && activeInbound.transferCount > 0) ? (
+                  <span className="text-[11px] text-[#8C7C20] font-bold bg-[#FAF8E7] px-2 py-0.5 rounded-md border border-[#E5DEAA] flex items-center gap-1">
+                    <GitMerge className="w-3 h-3 text-[#8C7C20]" />
+                    <span>需轉乘 {activeInbound.transferCount || 1} 次 ({activeInbound.transferStations?.join('、') || '轉乘站'})</span>
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-[#13695F] font-semibold bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/40">
+                    🟢 直達車・免轉乘
+                  </span>
+                )}
+                <span className="text-xs text-[#13695F] font-semibold bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/30">
+                  目前選定：{activeInbound.optionLabel || `方案 ${selectedInboundIdx + 1}`} ({activeInbound.departureTime} 開)
+                </span>
+              </div>
             </div>
 
             {/* 3 Inbound Option Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {inboundList.map((train, idx) => {
                 const isSelected = idx === selectedInboundIdx;
+                const isTransfer = train.isDirect === false || (train.transferCount && train.transferCount > 0);
                 return (
                   <button
                     key={`inbound-${idx}`}
@@ -541,6 +598,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                         {train.trainNo}
                       </div>
 
+                      {/* Transit indicator tag */}
+                      <div className="mt-1">
+                        {isTransfer ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#8C7C20] bg-[#FAF8E7] px-1.5 py-0.5 rounded border border-[#E5DEAA]">
+                            <GitMerge className="w-2.5 h-2.5" />
+                            <span>轉乘 {train.transferCount || 1} 次 ({train.transferStations?.join('、') || '轉乘站'})</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#13695F] bg-[#E5FAF7] px-1.5 py-0.5 rounded border border-[#81D8CF]/40">
+                            <span>直達列車</span>
+                          </span>
+                        )}
+                      </div>
+
                       <div className="flex items-center justify-between mt-2.5 text-xs">
                         <div>
                           <span className="text-[10px] text-[#78928E] block">{itinerary.destinationStation.name} 開</span>
@@ -562,14 +633,220 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                       <span className="font-bold text-[#13695F]">NT$ {train.fareEstimate}</span>
                     </div>
 
-                    {train.features && (
+                    {(train.transferSummary || train.features) && (
                       <div className="mt-1.5 text-[10px] text-[#4E6864] bg-[#FAF8E7] rounded px-1.5 py-0.5 truncate border border-[#E5DEAA]/50">
-                        {train.features}
+                        {train.transferSummary || train.features}
                       </div>
                     )}
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* 3. Detailed Leg-by-Leg & Transfer Connection Timeline for Selected Trains */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#81D8CF]/60 shadow-sm">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#FAF8E7]">
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 rounded-lg bg-[#E5FAF7] text-[#13695F]">
+                  <Route className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[#122B28]">
+                    當前選定車次・各段搭乘與轉乘詳細指引
+                  </h4>
+                  <p className="text-[11px] text-[#546E6A]">
+                    詳細標註出發站、抵達站、班次號碼與中途轉乘站點等候資訊
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-semibold text-[#13695F] bg-[#E5FAF7] px-2 py-0.5 rounded border border-[#81D8CF]/30 hidden sm:inline-block">
+                即時換乘指南
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Outbound Leg Breakdown */}
+              <div className="bg-[#FAF8E7]/50 rounded-xl p-3.5 border border-[#E5DEAA]">
+                <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5DEAA]/60">
+                  <span className="text-xs font-bold text-[#13695F] flex items-center gap-1.5">
+                    <Train className="w-3.5 h-3.5 text-[#1A8F82]" />
+                    <span>【去程】{itinerary.originStation.name} ➔ {itinerary.destinationStation.name}</span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#546E6A]">
+                    總車程 {activeOutbound.durationText}
+                  </span>
+                </div>
+
+                {/* Render Outbound Legs */}
+                {activeOutbound.legs && activeOutbound.legs.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {activeOutbound.legs.map((leg, lIdx) => (
+                      <React.Fragment key={`out-leg-${lIdx}`}>
+                        <div className="bg-white rounded-lg p-3 border border-[#E5DEAA] shadow-2xs">
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-bold text-[#122B28] flex items-center gap-1">
+                              <span className="w-4 h-4 rounded-full bg-[#1A8F82] text-white text-[10px] font-black inline-flex items-center justify-center">
+                                {leg.legIndex || lIdx + 1}
+                              </span>
+                              <span>第 {leg.legIndex || lIdx + 1} 段列車</span>
+                            </span>
+                            <span className="text-[11px] font-bold text-[#1A8F82] bg-[#E5FAF7] px-2 py-0.5 rounded">
+                              {leg.trainType} {leg.trainNo}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs font-bold text-[#122B28] mt-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[#13695F] font-black">{leg.fromStation}</span>
+                              <span className="text-[#546E6A] font-medium text-[11px]">({leg.departureTime} 開)</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#81D8CF] text-[11px] font-medium">
+                              <ArrowRight className="w-3.5 h-3.5 text-[#1A8F82]" />
+                              <span>{leg.durationText || ''}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[#13695F] font-black">{leg.toStation}</span>
+                              <span className="text-[#546E6A] font-medium text-[11px]">({leg.arrivalTime} 到)</span>
+                            </div>
+                          </div>
+
+                          {leg.note && (
+                            <p className="mt-1.5 text-[11px] text-[#546E6A] bg-[#FAF8E7] p-1.5 rounded border border-[#E5DEAA]/60">
+                              💡 {leg.note}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* If followed by another leg, show transfer callout */}
+                        {lIdx < activeOutbound.legs.length - 1 && (
+                          <div className="my-1.5 p-2 bg-[#E5FAF7] rounded-lg border border-[#81D8CF]/50 text-xs flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 font-bold text-[#13695F]">
+                              <GitMerge className="w-3.5 h-3.5 text-[#1A8F82]" />
+                              <span>於【{leg.toStation} 站】轉乘接駁</span>
+                            </div>
+                            <span className="text-[11px] font-extrabold text-[#1A8F82] bg-white px-2 py-0.5 rounded border border-[#81D8CF]/40">
+                              等候約 {leg.transferWaitMinutes || 12} 分鐘
+                            </span>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  // Direct / single leg fallback
+                  <div className="bg-white rounded-lg p-3 border border-[#E5DEAA]">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-bold text-[#122B28] flex items-center gap-1">
+                        <span className="w-4 h-4 rounded-full bg-[#1A8F82] text-white text-[10px] font-black inline-flex items-center justify-center">1</span>
+                        <span>直達列車（免轉乘）</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-[#1A8F82] bg-[#E5FAF7] px-2 py-0.5 rounded">
+                        {activeOutbound.trainType} {activeOutbound.trainNo}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-bold text-[#122B28] mt-2">
+                      <span className="text-[#13695F]">{itinerary.originStation.name} ({activeOutbound.departureTime} 開)</span>
+                      <span className="text-[#81D8CF] text-xs">➔➔➔</span>
+                      <span className="text-[#13695F]">{itinerary.destinationStation.name} ({activeOutbound.arrivalTime} 到)</span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-[#546E6A] bg-[#FAF8E7] p-1.5 rounded border border-[#E5DEAA]/60">
+                      💡 {activeOutbound.features || '一車直達目的地，請依票面車廂座位入座。'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Inbound Leg Breakdown */}
+              <div className="bg-[#FAF8E7]/50 rounded-xl p-3.5 border border-[#E5DEAA]">
+                <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5DEAA]/60">
+                  <span className="text-xs font-bold text-[#13695F] flex items-center gap-1.5">
+                    <Train className="w-3.5 h-3.5 text-[#1A8F82]" />
+                    <span>【回程】{itinerary.destinationStation.name} ➔ {itinerary.originStation.name}</span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-[#546E6A]">
+                    總車程 {activeInbound.durationText}
+                  </span>
+                </div>
+
+                {/* Render Inbound Legs */}
+                {activeInbound.legs && activeInbound.legs.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {activeInbound.legs.map((leg, lIdx) => (
+                      <React.Fragment key={`in-leg-${lIdx}`}>
+                        <div className="bg-white rounded-lg p-3 border border-[#E5DEAA] shadow-2xs">
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-bold text-[#122B28] flex items-center gap-1">
+                              <span className="w-4 h-4 rounded-full bg-[#1A8F82] text-white text-[10px] font-black inline-flex items-center justify-center">
+                                {leg.legIndex || lIdx + 1}
+                              </span>
+                              <span>第 {leg.legIndex || lIdx + 1} 段列車</span>
+                            </span>
+                            <span className="text-[11px] font-bold text-[#1A8F82] bg-[#E5FAF7] px-2 py-0.5 rounded">
+                              {leg.trainType} {leg.trainNo}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs font-bold text-[#122B28] mt-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[#13695F] font-black">{leg.fromStation}</span>
+                              <span className="text-[#546E6A] font-medium text-[11px]">({leg.departureTime} 開)</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#81D8CF] text-[11px] font-medium">
+                              <ArrowRight className="w-3.5 h-3.5 text-[#1A8F82]" />
+                              <span>{leg.durationText || ''}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[#13695F] font-black">{leg.toStation}</span>
+                              <span className="text-[#546E6A] font-medium text-[11px]">({leg.arrivalTime} 到)</span>
+                            </div>
+                          </div>
+
+                          {leg.note && (
+                            <p className="mt-1.5 text-[11px] text-[#546E6A] bg-[#FAF8E7] p-1.5 rounded border border-[#E5DEAA]/60">
+                              💡 {leg.note}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* If followed by another leg, show transfer callout */}
+                        {lIdx < activeInbound.legs.length - 1 && (
+                          <div className="my-1.5 p-2 bg-[#E5FAF7] rounded-lg border border-[#81D8CF]/50 text-xs flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 font-bold text-[#13695F]">
+                              <GitMerge className="w-3.5 h-3.5 text-[#1A8F82]" />
+                              <span>於【{leg.toStation} 站】轉乘接駁</span>
+                            </div>
+                            <span className="text-[11px] font-extrabold text-[#1A8F82] bg-white px-2 py-0.5 rounded border border-[#81D8CF]/40">
+                              等候約 {leg.transferWaitMinutes || 12} 分鐘
+                            </span>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  // Direct / single leg fallback
+                  <div className="bg-white rounded-lg p-3 border border-[#E5DEAA]">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-bold text-[#122B28] flex items-center gap-1">
+                        <span className="w-4 h-4 rounded-full bg-[#1A8F82] text-white text-[10px] font-black inline-flex items-center justify-center">1</span>
+                        <span>直達列車（免轉乘）</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-[#1A8F82] bg-[#E5FAF7] px-2 py-0.5 rounded">
+                        {activeInbound.trainType} {activeInbound.trainNo}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-bold text-[#122B28] mt-2">
+                      <span className="text-[#13695F]">{itinerary.destinationStation.name} ({activeInbound.departureTime} 開)</span>
+                      <span className="text-[#81D8CF] text-xs">➔➔➔</span>
+                      <span className="text-[#13695F]">{itinerary.originStation.name} ({activeInbound.arrivalTime} 到)</span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-[#546E6A] bg-[#FAF8E7] p-1.5 rounded border border-[#E5DEAA]/60">
+                      💡 {activeInbound.features || '一車直達返程站，安心就座休息。'}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -592,7 +869,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
             <span>詳細一日行程時間表與景點美食推薦</span>
           </h3>
           <span className="text-xs text-[#546E6A]">
-            點擊「Google Maps 導航」立即開啟路線
+            點擊「地圖查看」於地圖中定位景點
           </span>
         </div>
 
@@ -644,9 +921,9 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                     </p>
                   </div>
 
-                  {/* Navigation and map trigger */}
-                  <div className="flex items-center space-x-2">
-                    {onSelectStopOnMap && (
+                  {/* Map trigger */}
+                  {onSelectStopOnMap && (
+                    <div className="flex items-center space-x-2">
                       <button
                         onClick={() => onSelectStopOnMap(stop)}
                         className="px-2.5 py-1.5 rounded-lg bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] text-xs font-semibold flex items-center space-x-1 border border-[#E5DEAA] transition-colors cursor-pointer"
@@ -655,18 +932,8 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                         <MapPin className="w-3.5 h-3.5 text-[#1A8F82]" />
                         <span>地圖查看</span>
                       </button>
-                    )}
-
-                    <button
-                      id={`btn-navigate-stop-${index}`}
-                      onClick={() => openGoogleMapsDirection(stop)}
-                      className="px-3 py-1.5 rounded-lg bg-[#1A8F82] hover:bg-[#13695F] text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                      title="在 Google Maps 中開啟精準導航與步行指南"
-                    >
-                      <Navigation className="w-3.5 h-3.5" />
-                      <span>Google Maps 導航</span>
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Description */}

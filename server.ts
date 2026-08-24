@@ -146,11 +146,17 @@ app.post('/api/generate-itinerary', async (req, res) => {
 
 請嚴格遵循以下規劃原則：
 1. 【個人化最高優先】：必須 100% 依據旅客設定的「旅遊風格主題」、「同行夥伴組合」、「行程節奏」、「目的地交通方式」與「自訂特殊需求備註」進行深度量身定做！行程標題、停留點、餐飲選擇、活動內容與貼心小叮嚀都必須精準體現這些個人化偏好。
-2. 行程以目的地火車站為核心放射狀規劃，景點與美食皆須為真實存在的在地知名店家與觀光勝地。
-3. 路線順序需具備高度地理合理性（不走回頭路），明確說明由火車站出發如何轉乘（如步行、YouBike、台灣好行客運、租機車、計程車）。
-4. 包含道地的火車出發與回程車次建議（如新自強3000、普悠瑪、自強號、區間快車）、台鐵便當與在地必吃名產。
-5. 每一個景點與餐廳都需提供具體的停留時間、特色介紹、推薦餐點或拍照點，以及精準的地理座標(lat, lng)與地址。
-6. 必須以繁體中文（台灣習慣用語）輸出嚴格符合 JSON Schema 的內容。`;
+2. 【台鐵轉乘與列車班次詳細指引】：起點火車站到目的地火車站之間，必須精準判斷是否為「直達列車」或「需要中途轉乘」：
+   - 直達情況（如台北直達礁溪/花蓮/台中/高雄等幹線）：isDirect 設為 true，transferCount 為 0，transferStations 為 []，transferSummary 為「直達列車・無須轉乘」，legs 包含 1 個單一搭乘區間。
+   - 轉乘情況（如平溪線車站十分/平溪/菁桐需在瑞芳轉乘；集集線車站車埕/集集需在二水或彰化轉乘；內灣線車站內灣/合興需在竹中或新竹轉乘；或跨線遠程轉乘）：
+     - isDirect 設為 false，transferCount 為 1 (或轉乘次數)，transferStations 設為轉乘站名陣列（如 ["瑞芳"]）。
+     - transferSummary 清楚說明，如「於【瑞芳站】轉乘 平溪深澳線（等候約 12 分鐘）」。
+     - legs 陣列詳細列出每一段的「搭乘車種、車次號、起站、迄站、出發時間、抵達時間、轉乘等候時間、乘車備註」。
+3. 行程以目的地火車站為核心放射狀規劃，景點與美食皆須為真實存在的在地知名店家與觀光勝地。
+4. 路線順序需具備高度地理合理性（不走回頭路），明確說明由火車站出發如何轉乘（如步行、YouBike、台灣好行客運、租機車、計程車）。
+5. 包含道地的火車出發與回程車次建議（如新自強3000、普悠瑪、自強號、區間快車）、台鐵便當與在地必吃名產。
+6. 每一個景點與餐廳都需提供具體的停留時間、特色介紹、推薦餐點或拍照點，以及精準的地理座標(lat, lng)與地址。
+7. 必須以繁體中文（台灣習慣用語）輸出嚴格符合 JSON Schema 的內容。`;
 
     const userPrompt = `請為我規劃專屬量身定制的一日鐵道深度旅遊：
 - 出發起點火車站：${origin.name} (${origin.county})
@@ -164,7 +170,7 @@ app.post('/api/generate-itinerary', async (req, res) => {
 4. 目的地接駁交通：${transportDesc}
 5. 旅客特別自訂需求備註：${customNotes ? `【最高優先級必達成需求】「${customNotes}」。請務必在行程標題、景點安排、餐飲選擇或導遊注意事項中明確呼應與落實此需求！` : '無特殊自訂需求'}
 
-請嚴格依照上述「主題風格」、「同行夥伴」、「節奏站點數量」、「當地交通方式」以及「自訂備註需求」，生成一份高契合度、生動具體且完全落地的行程表。包含主題標題、副標題、核心總結、各景點停留時間、交通指引、在地美食、去程3個時段班次與回程3個時段班次。`;
+請嚴格依照上述需求生成完整行程表。請特別注意：在推薦列車班次時，必須詳細列出起訖站之間是否為直達，若需轉乘則詳細列出所有轉乘站點、各段列車車種、車次號、發車與抵達時間及等候時間！`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',
@@ -190,12 +196,36 @@ app.post('/api/generate-itinerary', async (req, res) => {
                     properties: {
                       optionLabel: { type: Type.STRING, description: '時段定位標籤，例如：早鳥首選、主力推薦、彈性出發' },
                       trainType: { type: Type.STRING, description: '建議車種（如 EMU3000新自強、普悠瑪號、自強號、區間快車）' },
-                      trainNo: { type: Type.STRING, description: '車次號，如 自強 218次 或 區間快 4018次' },
+                      trainNo: { type: Type.STRING, description: '車次號，如 自強 218次 或 區快 4018次' },
                       departureTime: { type: Type.STRING, description: '出發時間，如 08:35' },
                       arrivalTime: { type: Type.STRING, description: '抵達時間，如 09:48' },
                       fareEstimate: { type: Type.INTEGER, description: '單程票價（NTD）' },
                       durationText: { type: Type.STRING, description: '車程描述，如 約1小時13分' },
                       features: { type: Type.STRING, description: '特色亮點，如 全車對號座/舒適平穩 或 免劃位/可刷TPASS與悠遊卡' },
+                      isDirect: { type: Type.BOOLEAN, description: '是否為直達列車（true為直達，false為需中途轉乘）' },
+                      transferCount: { type: Type.INTEGER, description: '轉乘次數（直達為0，轉乘1次為1）' },
+                      transferStations: { type: Type.ARRAY, items: { type: Type.STRING }, description: '轉乘站點名稱清單，例如 ["瑞芳"] 或 ["二水"]' },
+                      transferSummary: { type: Type.STRING, description: '轉乘指引摘要，如 "直達車・無須轉乘" 或 "於【瑞芳站】轉乘 平溪線（等候約 12 分）"' },
+                      legs: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            legIndex: { type: Type.INTEGER, description: '區間順序，從1開始' },
+                            trainType: { type: Type.STRING, description: '此區間搭乘車種' },
+                            trainNo: { type: Type.STRING, description: '此區間車次號' },
+                            fromStation: { type: Type.STRING, description: '此區間出發站點' },
+                            toStation: { type: Type.STRING, description: '此區間抵達站點' },
+                            departureTime: { type: Type.STRING, description: '此區間出發時間' },
+                            arrivalTime: { type: Type.STRING, description: '此區間抵達時間' },
+                            durationText: { type: Type.STRING, description: '此區間耗時' },
+                            transferWaitMinutes: { type: Type.INTEGER, description: '此區間結束後的轉乘等候分鐘數（最後一段為0）' },
+                            note: { type: Type.STRING, description: '月台轉乘小提示或特色備註' },
+                          },
+                          required: ['legIndex', 'trainType', 'trainNo', 'fromStation', 'toStation', 'departureTime', 'arrivalTime'],
+                        },
+                        description: '各搭乘區間與轉乘詳細清單',
+                      },
                     },
                     required: ['optionLabel', 'trainType', 'trainNo', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
                   },
@@ -214,6 +244,30 @@ app.post('/api/generate-itinerary', async (req, res) => {
                       fareEstimate: { type: Type.INTEGER, description: '回程票價（NTD）' },
                       durationText: { type: Type.STRING, description: '車程描述' },
                       features: { type: Type.STRING, description: '特色亮點' },
+                      isDirect: { type: Type.BOOLEAN, description: '是否為直達列車' },
+                      transferCount: { type: Type.INTEGER, description: '轉乘次數' },
+                      transferStations: { type: Type.ARRAY, items: { type: Type.STRING }, description: '轉乘站點名稱清單' },
+                      transferSummary: { type: Type.STRING, description: '轉乘指引摘要' },
+                      legs: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            legIndex: { type: Type.INTEGER, description: '區間順序，從1開始' },
+                            trainType: { type: Type.STRING, description: '此區間搭乘車種' },
+                            trainNo: { type: Type.STRING, description: '此區間車次號' },
+                            fromStation: { type: Type.STRING, description: '此區間出發站點' },
+                            toStation: { type: Type.STRING, description: '此區間抵達站點' },
+                            departureTime: { type: Type.STRING, description: '此區間出發時間' },
+                            arrivalTime: { type: Type.STRING, description: '此區間抵達時間' },
+                            durationText: { type: Type.STRING, description: '此區間耗時' },
+                            transferWaitMinutes: { type: Type.INTEGER, description: '轉乘等候分鐘數' },
+                            note: { type: Type.STRING, description: '轉乘備註' },
+                          },
+                          required: ['legIndex', 'trainType', 'trainNo', 'fromStation', 'toStation', 'departureTime', 'arrivalTime'],
+                        },
+                        description: '各搭乘區間與轉乘詳細清單',
+                      },
                     },
                     required: ['optionLabel', 'trainType', 'trainNo', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
                   },
@@ -228,6 +282,10 @@ app.post('/api/generate-itinerary', async (req, res) => {
                     arrivalTime: { type: Type.STRING, description: '預計抵達目的地時間，如 09:48' },
                     fareEstimate: { type: Type.INTEGER, description: '單程票價預估（NTD）' },
                     durationText: { type: Type.STRING, description: '車程時間描述' },
+                    isDirect: { type: Type.BOOLEAN, description: '是否為直達' },
+                    transferCount: { type: Type.INTEGER, description: '轉乘次數' },
+                    transferStations: { type: Type.ARRAY, items: { type: Type.STRING }, description: '轉乘站' },
+                    transferSummary: { type: Type.STRING, description: '轉乘指引' },
                   },
                   required: ['trainType', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
                 },
@@ -240,6 +298,10 @@ app.post('/api/generate-itinerary', async (req, res) => {
                     arrivalTime: { type: Type.STRING, description: '抵達起點站時間，如 18:55' },
                     fareEstimate: { type: Type.INTEGER, description: '回程票價預估（NTD）' },
                     durationText: { type: Type.STRING, description: '車程時間描述' },
+                    isDirect: { type: Type.BOOLEAN, description: '是否為直達' },
+                    transferCount: { type: Type.INTEGER, description: '轉乘次數' },
+                    transferStations: { type: Type.ARRAY, items: { type: Type.STRING }, description: '轉乘站' },
+                    transferSummary: { type: Type.STRING, description: '轉乘指引' },
                   },
                   required: ['trainType', 'departureTime', 'arrivalTime', 'fareEstimate', 'durationText'],
                 },
@@ -472,6 +534,472 @@ function getTransportDescription(transport?: string, destName?: string): string 
   }
 }
 
+// Helper to build realistic train recommendations with explicit direct vs. transfer legs
+function buildTrainRecommendations(origin: any, destination: any) {
+  const originName = origin?.name || '台北';
+  const destName = destination?.name || '礁溪';
+  const destLine = destination?.line || '';
+
+  // Branch line transit detection
+  const isPingxiBranch = ['十分', '平溪', '菁桐', '望古', '嶺腳', '猴硐', '海科館', '八斗子'].includes(destName) || destLine.includes('平溪');
+  const isJijiBranch = ['車埕', '集集', '水里', '濁水', '龍泉'].includes(destName) || destLine.includes('集集');
+  const isNeiwanBranch = ['內灣', '合興', '竹東', '九讚頭', '橫山'].includes(destName) || destLine.includes('內灣');
+  const isAlishan = ['奮起湖', '阿里山', '十字路'].includes(destName);
+
+  let isTransferRequired = isPingxiBranch || isJijiBranch || isNeiwanBranch || isAlishan;
+  let transferStationName = '';
+  let branchLineName = '';
+
+  if (isPingxiBranch) {
+    transferStationName = '瑞芳';
+    branchLineName = '平溪深澳線';
+  } else if (isJijiBranch) {
+    transferStationName = '二水';
+    branchLineName = '集集線';
+  } else if (isNeiwanBranch) {
+    transferStationName = '竹中';
+    branchLineName = '內灣線';
+  } else if (isAlishan) {
+    transferStationName = '嘉義';
+    branchLineName = '阿里山林鐵';
+  }
+
+  // If origin is already the transfer station, it's direct!
+  if (originName === transferStationName) {
+    isTransferRequired = false;
+  }
+
+  let outboundOptions: any[] = [];
+  let inboundOptions: any[] = [];
+
+  if (isTransferRequired) {
+    // 轉乘模式 (Transfer required)
+    outboundOptions = [
+      {
+        optionLabel: '早鳥首選',
+        trainType: `自強號 ➔ ${branchLineName}`,
+        trainNo: '自強 204次 + 區間 4710次',
+        departureTime: '07:30',
+        arrivalTime: '09:05',
+        fareEstimate: 165,
+        durationText: '約1小時35分 (含轉乘12分)',
+        features: `於【${transferStationName}站】轉乘・晨光抵達探索`,
+        isDirect: false,
+        transferCount: 1,
+        transferStations: [transferStationName],
+        transferSummary: `於【${transferStationName}站】轉乘 ${branchLineName}（同站跨月台等候約 12 分）`,
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '自強號 (EMU3000)',
+            trainNo: '自強 204次',
+            fromStation: originName,
+            toStation: transferStationName,
+            departureTime: '07:30',
+            arrivalTime: '08:22',
+            durationText: '約52分',
+            transferWaitMinutes: 12,
+            note: `抵達【${transferStationName}站】後，請依指標前往第3月台轉乘${branchLineName}`,
+          },
+          {
+            legIndex: 2,
+            trainType: `${branchLineName} 區間車`,
+            trainNo: '區間 4710次',
+            fromStation: transferStationName,
+            toStation: destName,
+            departureTime: '08:34',
+            arrivalTime: '09:05',
+            durationText: '約31分',
+            transferWaitMinutes: 0,
+            note: '沿途飽覽在地山海溪谷與鐵道風光',
+          },
+        ],
+      },
+      {
+        optionLabel: '主力推薦',
+        trainType: `新自強號 ➔ ${branchLineName}`,
+        trainNo: '自強 218次 + 區間 4714次',
+        departureTime: '08:35',
+        arrivalTime: '10:08',
+        fareEstimate: 165,
+        durationText: '約1小時33分 (含轉乘14分)',
+        features: `黃金時段・於【${transferStationName}站】順暢接駁`,
+        isDirect: false,
+        transferCount: 1,
+        transferStations: [transferStationName],
+        transferSummary: `於【${transferStationName}站】轉乘 ${branchLineName}（等候約 14 分鐘）`,
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '新自強號 (EMU3000)',
+            trainNo: '自強 218次',
+            fromStation: originName,
+            toStation: transferStationName,
+            departureTime: '08:35',
+            arrivalTime: '09:24',
+            durationText: '約49分',
+            transferWaitMinutes: 14,
+            note: `於【${transferStationName}站】同站換乘，時間充裕可於月台稍作拍照`,
+          },
+          {
+            legIndex: 2,
+            trainType: `${branchLineName} 區間車`,
+            trainNo: '區間 4714次',
+            fromStation: transferStationName,
+            toStation: destName,
+            departureTime: '09:38',
+            arrivalTime: '10:08',
+            durationText: '約30分',
+            transferWaitMinutes: 0,
+            note: `順利抵達${destName}火車站`,
+          },
+        ],
+      },
+      {
+        optionLabel: '悠閒出發',
+        trainType: `區間快車 ➔ ${branchLineName}`,
+        trainNo: '區快 4018次 + 區間 4718次',
+        departureTime: '09:20',
+        arrivalTime: '10:58',
+        fareEstimate: 125,
+        durationText: '約1小時38分 (含轉乘15分)',
+        features: `免劃位・可刷 TPASS 悠遊卡於【${transferStationName}】轉乘`,
+        isDirect: false,
+        transferCount: 1,
+        transferStations: [transferStationName],
+        transferSummary: `於【${transferStationName}站】轉乘 ${branchLineName}（等候約 15 分鐘）`,
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '台鐵 區間快車',
+            trainNo: '區快 4018次',
+            fromStation: originName,
+            toStation: transferStationName,
+            departureTime: '09:20',
+            arrivalTime: '10:15',
+            durationText: '約55分',
+            transferWaitMinutes: 15,
+            note: `刷悠遊卡進站，於【${transferStationName}站】換乘`,
+          },
+          {
+            legIndex: 2,
+            trainType: `${branchLineName} 區間車`,
+            trainNo: '區間 4718次',
+            fromStation: transferStationName,
+            toStation: destName,
+            departureTime: '10:30',
+            arrivalTime: '10:58',
+            durationText: '約28分',
+            transferWaitMinutes: 0,
+            note: `漫遊抵達${destName}`,
+          },
+        ],
+      },
+    ];
+
+    // Inbound options for transfer
+    inboundOptions = [
+      {
+        optionLabel: '提早賦歸',
+        trainType: `${branchLineName} ➔ 自強號`,
+        trainNo: '區間 4729次 + 自強 223次',
+        departureTime: '16:30',
+        arrivalTime: '18:10',
+        fareEstimate: 165,
+        durationText: '約1小時40分 (含轉乘15分)',
+        features: `避開尖峰・於【${transferStationName}站】轉乘返程`,
+        isDirect: false,
+        transferCount: 1,
+        transferStations: [transferStationName],
+        transferSummary: `於【${transferStationName}站】轉乘自強號返回${originName}（等候約 15 分鐘）`,
+        legs: [
+          {
+            legIndex: 1,
+            trainType: `${branchLineName} 區間車`,
+            trainNo: '區間 4729次',
+            fromStation: destName,
+            toStation: transferStationName,
+            departureTime: '16:30',
+            arrivalTime: '17:02',
+            durationText: '約32分',
+            transferWaitMinutes: 15,
+            note: `抵達【${transferStationName}站】後，前往第1月台轉乘幹線自強號`,
+          },
+          {
+            legIndex: 2,
+            trainType: '自強號',
+            trainNo: '自強 223次',
+            fromStation: transferStationName,
+            toStation: originName,
+            departureTime: '17:17',
+            arrivalTime: '18:10',
+            durationText: '約53分',
+            transferWaitMinutes: 0,
+            note: `抵達${originName}車站`,
+          },
+        ],
+      },
+      {
+        optionLabel: '主力推薦',
+        trainType: `${branchLineName} ➔ 新自強號`,
+        trainNo: '區間 4733次 + 自強 229次',
+        departureTime: '17:25',
+        arrivalTime: '19:05',
+        fareEstimate: 165,
+        durationText: '約1小時40分 (含轉乘12分)',
+        features: `一日遊完美收尾・於【${transferStationName}站】順暢換乘`,
+        isDirect: false,
+        transferCount: 1,
+        transferStations: [transferStationName],
+        transferSummary: `於【${transferStationName}站】轉乘新自強號（等候約 12 分鐘）`,
+        legs: [
+          {
+            legIndex: 1,
+            trainType: `${branchLineName} 區間車`,
+            trainNo: '區間 4733次',
+            fromStation: destName,
+            toStation: transferStationName,
+            departureTime: '17:25',
+            arrivalTime: '17:58',
+            durationText: '約33分',
+            transferWaitMinutes: 12,
+            note: `在【${transferStationName}站】跨月台轉乘新自強號`,
+          },
+          {
+            legIndex: 2,
+            trainType: '新自強號 (EMU3000)',
+            trainNo: '自強 229次',
+            fromStation: transferStationName,
+            toStation: originName,
+            departureTime: '18:10',
+            arrivalTime: '19:05',
+            durationText: '約55分',
+            transferWaitMinutes: 0,
+            note: `車上享用在地便當，舒適抵達${originName}`,
+          },
+        ],
+      },
+      {
+        optionLabel: '晚間漫遊',
+        trainType: `${branchLineName} ➔ 區間快/自強`,
+        trainNo: '區間 4737次 + 自強 285次',
+        departureTime: '18:40',
+        arrivalTime: '20:30',
+        fareEstimate: 165,
+        durationText: '約1小時50分 (含轉乘18分)',
+        features: `商圈老街逛好逛滿・於【${transferStationName}站】夜間轉乘`,
+        isDirect: false,
+        transferCount: 1,
+        transferStations: [transferStationName],
+        transferSummary: `於【${transferStationName}站】轉乘自強號（等候約 18 分鐘）`,
+        legs: [
+          {
+            legIndex: 1,
+            trainType: `${branchLineName} 區間車`,
+            trainNo: '區間 4737次',
+            fromStation: destName,
+            toStation: transferStationName,
+            departureTime: '18:40',
+            arrivalTime: '19:12',
+            durationText: '約32分',
+            transferWaitMinutes: 18,
+            note: `於【${transferStationName}站】稍候換車`,
+          },
+          {
+            legIndex: 2,
+            trainType: '自強號 / 區間快',
+            trainNo: '自強 285次',
+            fromStation: transferStationName,
+            toStation: originName,
+            departureTime: '19:30',
+            arrivalTime: '20:30',
+            durationText: '約1小時',
+            transferWaitMinutes: 0,
+            note: `平安返抵${originName}`,
+          },
+        ],
+      },
+    ];
+  } else {
+    // 直達車模式 (Direct)
+    outboundOptions = [
+      {
+        optionLabel: '早鳥首選',
+        trainType: '新自強號 (EMU3000)',
+        trainNo: '自強 408次',
+        departureTime: '07:40',
+        arrivalTime: '08:52',
+        fareEstimate: 218,
+        durationText: '約1小時12分',
+        features: '全車對號座・晨間抵達充實探索',
+        isDirect: true,
+        transferCount: 0,
+        transferStations: [],
+        transferSummary: '直達列車・無須轉乘',
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '新自強號 (EMU3000)',
+            trainNo: '自強 408次',
+            fromStation: originName,
+            toStation: destName,
+            departureTime: '07:40',
+            arrivalTime: '08:52',
+            durationText: '約1小時12分',
+            transferWaitMinutes: 0,
+            note: '直達列車，一車直達目的地',
+          },
+        ],
+      },
+      {
+        optionLabel: '主力推薦',
+        trainType: 'EMU3000 / 普悠瑪號',
+        trainNo: '自強 218次',
+        departureTime: '08:35',
+        arrivalTime: '09:48',
+        fareEstimate: 218,
+        durationText: '約1小時13分',
+        features: '熱門黃金時段・最省時舒適班次',
+        isDirect: true,
+        transferCount: 0,
+        transferStations: [],
+        transferSummary: '直達列車・無須轉乘',
+        legs: [
+          {
+            legIndex: 1,
+            trainType: 'EMU3000 / 普悠瑪號',
+            trainNo: '自強 218次',
+            fromStation: originName,
+            toStation: destName,
+            departureTime: '08:35',
+            arrivalTime: '09:48',
+            durationText: '約1小時13分',
+            transferWaitMinutes: 0,
+            note: '直達列車，乘車體驗舒適平穩',
+          },
+        ],
+      },
+      {
+        optionLabel: '悠閒出發',
+        trainType: '區間快車 / 自強號',
+        trainNo: '區快 4018次',
+        departureTime: '09:20',
+        arrivalTime: '10:45',
+        fareEstimate: 168,
+        durationText: '約1小時25分',
+        features: '免劃位・可刷 TPASS 與悠遊卡乘車',
+        isDirect: true,
+        transferCount: 0,
+        transferStations: [],
+        transferSummary: '直達列車・無須轉乘',
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '區間快車 / 自強號',
+            trainNo: '區快 4018次',
+            fromStation: originName,
+            toStation: destName,
+            departureTime: '09:20',
+            arrivalTime: '10:45',
+            durationText: '約1小時25分',
+            transferWaitMinutes: 0,
+            note: '直達列車，自由入座免劃位',
+          },
+        ],
+      },
+    ];
+
+    inboundOptions = [
+      {
+        optionLabel: '提早賦歸',
+        trainType: '自強號',
+        trainNo: '自強 223次',
+        departureTime: '16:50',
+        arrivalTime: '18:10',
+        fareEstimate: 218,
+        durationText: '約1小時20分',
+        features: '避開尖峰人潮・輕鬆返家享用晚餐',
+        isDirect: true,
+        transferCount: 0,
+        transferStations: [],
+        transferSummary: '直達列車・無須轉乘',
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '自強號',
+            trainNo: '自強 223次',
+            fromStation: destName,
+            toStation: originName,
+            departureTime: '16:50',
+            arrivalTime: '18:10',
+            durationText: '約1小時20分',
+            transferWaitMinutes: 0,
+            note: '直達返程列車',
+          },
+        ],
+      },
+      {
+        optionLabel: '主力推薦',
+        trainType: '新自強號 (EMU3000)',
+        trainNo: '自強 229次',
+        departureTime: '17:40',
+        arrivalTime: '18:55',
+        fareEstimate: 218,
+        durationText: '約1小時15分',
+        features: '完美一日遊收尾・車上享用鐵路便當',
+        isDirect: true,
+        transferCount: 0,
+        transferStations: [],
+        transferSummary: '直達列車・無須轉乘',
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '新自強號 (EMU3000)',
+            trainNo: '自強 229次',
+            fromStation: destName,
+            toStation: originName,
+            departureTime: '17:40',
+            arrivalTime: '18:55',
+            durationText: '約1小時15分',
+            transferWaitMinutes: 0,
+            note: '直達返程列車，推薦車上享用台鐵便當',
+          },
+        ],
+      },
+      {
+        optionLabel: '晚間漫遊',
+        trainType: '自強號 / 區間快',
+        trainNo: '自強 285次',
+        departureTime: '19:15',
+        arrivalTime: '20:38',
+        fareEstimate: 218,
+        durationText: '約1小時23分',
+        features: '夜市商圈逛好逛滿・享受在地夜景',
+        isDirect: true,
+        transferCount: 0,
+        transferStations: [],
+        transferSummary: '直達列車・無須轉乘',
+        legs: [
+          {
+            legIndex: 1,
+            trainType: '自強號 / 區間快',
+            trainNo: '自強 285次',
+            fromStation: destName,
+            toStation: originName,
+            departureTime: '19:15',
+            arrivalTime: '20:38',
+            durationText: '約1小時23分',
+            transferWaitMinutes: 0,
+            note: '直達返程列車',
+          },
+        ],
+      },
+    ];
+  }
+
+  return { outboundOptions, inboundOptions };
+}
+
 // Fallback generator for rich data when offline or building
 function generateFallbackItinerary(origin: any, destination: any, preferences: any, travelDate: string) {
   const destName = destination?.name || '礁溪';
@@ -541,71 +1069,7 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
     }
   };
 
-  const outboundOptions = [
-    {
-      optionLabel: '早鳥首選',
-      trainType: '新自強號 (EMU3000)',
-      trainNo: '自強 408次',
-      departureTime: '07:40',
-      arrivalTime: '08:52',
-      fareEstimate: 218,
-      durationText: '約1小時12分',
-      features: '全車對號座・晨間抵達充實探索',
-    },
-    {
-      optionLabel: '主力推薦',
-      trainType: 'EMU3000 / 普悠瑪號',
-      trainNo: '自強 218次',
-      departureTime: '08:35',
-      arrivalTime: '09:48',
-      fareEstimate: 218,
-      durationText: '約1小時13分',
-      features: '熱門黃金時段・最省時舒適班次',
-    },
-    {
-      optionLabel: '悠閒出發',
-      trainType: '區間快車 / 自強號',
-      trainNo: '區快 4018次',
-      departureTime: '09:20',
-      arrivalTime: '10:45',
-      fareEstimate: 168,
-      durationText: '約1小時25分',
-      features: '免劃位・可刷 TPASS 與悠遊卡乘車',
-    },
-  ];
-
-  const inboundOptions = [
-    {
-      optionLabel: '提早賦歸',
-      trainType: '自強號',
-      trainNo: '自強 223次',
-      departureTime: '16:50',
-      arrivalTime: '18:10',
-      fareEstimate: 218,
-      durationText: '約1小時20分',
-      features: '避開尖峰人潮・輕鬆返家享用晚餐',
-    },
-    {
-      optionLabel: '主力推薦',
-      trainType: '新自強號 (EMU3000)',
-      trainNo: '自強 229次',
-      departureTime: '17:40',
-      arrivalTime: '18:55',
-      fareEstimate: 218,
-      durationText: '約1小時15分',
-      features: '完美一日遊收尾・車上享用鐵路便當',
-    },
-    {
-      optionLabel: '晚間漫遊',
-      trainType: '自強號 / 區間快',
-      trainNo: '自強 285次',
-      departureTime: '19:15',
-      arrivalTime: '20:38',
-      fareEstimate: 218,
-      durationText: '約1小時23分',
-      features: '夜市商圈逛好逛滿・享受在地夜景',
-    },
-  ];
+  const { outboundOptions, inboundOptions } = buildTrainRecommendations(origin, destination);
 
   // Dynamic stops according to style & pace
   const allGeneratedStops: any[] = [
