@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Train,
   Clock,
@@ -26,11 +26,15 @@ import {
   Route,
   Layers,
   ArrowDown,
-  FileDown
+  FileDown,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { DayItinerary, ItineraryStop, TrainTripOption } from '../types';
 import confetti from 'canvas-confetti';
 import { PdfExportModal } from './PdfExportModal';
+import { PdfPrintableSheet } from './PdfPrintableSheet';
+import { exportElementToPdf } from '../utils/exportPdf';
 
 interface ItineraryViewProps {
   itinerary: DayItinerary;
@@ -47,6 +51,9 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
+  const pdfPrintableRef = useRef<HTMLDivElement>(null);
 
   // Normalize 3 Outbound Train Options
   const outboundList = itinerary.trainRecommendation.outboundList && itinerary.trainRecommendation.outboundList.length > 0
@@ -155,6 +162,33 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleDirectExportPdf = async () => {
+    if (isExportingPdf || !pdfPrintableRef.current) return;
+    try {
+      setIsExportingPdf(true);
+      setExportSuccess(false);
+      await exportElementToPdf(pdfPrintableRef.current, itinerary);
+      setExportSuccess(true);
+      try {
+        confetti({
+          particleCount: 45,
+          spread: 60,
+          origin: { y: 0.8 },
+          colors: ['#1A8F82', '#5EC9BD', '#FAF8E7', '#F8F5D6']
+        });
+      } catch {
+        // ignore
+      }
+      setTimeout(() => setExportSuccess(false), 3500);
+    } catch (err) {
+      console.error('Direct PDF export error:', err);
+      // Fallback to open modal if canvas direct capture fails
+      setIsPdfModalOpen(true);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleSaveWithCelebration = () => {
@@ -279,12 +313,27 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
 
               <button
                 id="btn-export-ai-pdf"
-                onClick={() => setIsPdfModalOpen(true)}
-                className="flex px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5EC9BD] to-[#81D8CF] hover:from-[#81D8CF] hover:to-[#5EC9BD] text-[#0F3A35] text-xs font-black border border-[#81D8CF] items-center space-x-1.5 transition-all shadow-md active:scale-95 cursor-pointer hover:shadow-[#81D8CF]/40"
-                title="使用 AI 整合匯出完整行程 PDF（含路線地圖、選定車次指引、景點美食與台灣好行接駁）"
+                onClick={handleDirectExportPdf}
+                disabled={isExportingPdf}
+                className="flex px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5EC9BD] to-[#81D8CF] hover:from-[#81D8CF] hover:to-[#5EC9BD] text-[#0F3A35] text-xs font-black border border-[#81D8CF] items-center space-x-1.5 transition-all shadow-md active:scale-95 cursor-pointer hover:shadow-[#81D8CF]/40 disabled:opacity-60"
+                title="直接下載完整一日遊行程 PDF（含路線地圖、選定車次指引、景點美食與台灣好行接駁）"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#0F3A35]" />
-                <span>AI 整合匯出 PDF</span>
+                {isExportingPdf ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0F3A35]" />
+                    <span>正在生成 PDF...</span>
+                  </>
+                ) : exportSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#13695F]" />
+                    <span>已下載 PDF！</span>
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="w-3.5 h-3.5 text-[#0F3A35]" />
+                    <span>AI 整合匯出 PDF</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1231,18 +1280,48 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
               </div>
               <button
                 id="btn-bottom-export-ai-pdf"
-                onClick={() => setIsPdfModalOpen(true)}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#5EC9BD] hover:bg-[#81D8CF] active:scale-95 text-[#0F3A35] text-xs font-extrabold flex items-center justify-center space-x-2 shadow-lg transition-all cursor-pointer flex-shrink-0"
+                onClick={handleDirectExportPdf}
+                disabled={isExportingPdf}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#5EC9BD] hover:bg-[#81D8CF] active:scale-95 text-[#0F3A35] text-xs font-extrabold flex items-center justify-center space-x-2 shadow-lg transition-all cursor-pointer flex-shrink-0 disabled:opacity-60"
               >
-                <FileDown className="w-4 h-4 text-[#0F3A35]" />
-                <span>AI 整合匯出 PDF</span>
+                {isExportingPdf ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-[#0F3A35]" />
+                    <span>正在生成 PDF...</span>
+                  </>
+                ) : exportSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-[#13695F]" />
+                    <span>已下載 PDF！</span>
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="w-4 h-4 text-[#0F3A35]" />
+                    <span>AI 整合匯出 PDF</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PDF Export Modal */}
+      {/* Hidden Offscreen Pure Printable Sheet for Direct PDF Canvas Generation */}
+      <div 
+        className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 overflow-hidden" 
+        aria-hidden="true"
+        style={{ zIndex: -100 }}
+      >
+        <div ref={pdfPrintableRef}>
+          <PdfPrintableSheet
+            itinerary={itinerary}
+            selectedOutbound={activeOutbound}
+            selectedInbound={activeInbound}
+          />
+        </div>
+      </div>
+
+      {/* PDF Export Modal (Fallback Preview if needed) */}
       <PdfExportModal
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
