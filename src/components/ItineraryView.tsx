@@ -1308,9 +1308,17 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
 
       {/* Hidden Offscreen Pure Printable Sheet for Direct PDF Canvas Generation */}
       <div 
-        className="fixed -left-[9999px] top-0 pointer-events-none opacity-0 overflow-hidden" 
+        id="pdf-render-offscreen-host"
+        className="fixed pointer-events-none" 
         aria-hidden="true"
-        style={{ zIndex: -100 }}
+        style={{ 
+          top: 0, 
+          left: '-9999px', 
+          width: '794px', 
+          opacity: 1, 
+          visibility: 'visible', 
+          zIndex: -9999 
+        }}
       >
         <div ref={pdfPrintableRef}>
           <PdfPrintableSheet
