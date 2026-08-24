@@ -434,7 +434,7 @@ export default function App() {
                   </span>
                 </p>
                 <p className="text-[#4E6864] mt-0.5">
-                  輸入並驗證 Gemini AI 與 Google Maps API 金鑰，即可享受客製化智能行程與全台地圖導航。
+                  輸入並驗證 Gemini AI 與 Google Maps API 金鑰，即可享受客製化智能行程與景點周邊地圖導航。
                 </p>
               </div>
             </div>

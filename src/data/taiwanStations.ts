@@ -42,13 +42,16 @@ export const STATION_GRADES: StationGradeOption[] = [
   { id: 'flag', name: '招呼站', badgeClass: 'bg-stone-100 text-stone-700 border-stone-300', desc: '崎頂、枋山、三坑、合興等無人或秘境景觀小站' },
 ];
 
-// Counties list for granular filter
-export const COUNTY_LIST = [
-  '基隆市', '台北市', '新北市', '桃園市', '新竹縣', '新竹市',
-  '苗栗縣', '台中市', '彰化縣', '南投縣', '雲林縣',
-  '嘉義縣', '嘉義市', '台南市', '高雄市', '屏東縣',
-  '宜蘭縣', '花蓮縣', '台東縣',
+// Counties list for granular filter (split into 2 balanced rows for full Taiwan coverage display)
+export const COUNTY_ROW_1 = [
+  '基隆市', '台北市', '新北市', '桃園市', '新竹縣', '新竹市', '苗栗縣', '台中市', '彰化縣'
 ];
+
+export const COUNTY_ROW_2 = [
+  '南投縣', '雲林縣', '嘉義縣', '嘉義市', '台南市', '高雄市', '屏東縣', '宜蘭縣', '花蓮縣', '台東縣'
+];
+
+export const COUNTY_LIST = [...COUNTY_ROW_1, ...COUNTY_ROW_2];
 
 // Popular itinerary shortcuts
 export const POPULAR_ROUTE_SHORTCUTS = [

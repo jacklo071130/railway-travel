@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Compass className="w-4 h-4" />
-              <span>全台地圖</span>
+              <span>景點周邊地圖</span>
             </button>
             <button
               id="nav-tab-explorer"
@@ -195,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('map')}
             className={`py-1 px-2 rounded ${activeTab === 'map' ? 'text-[#1A8F82] font-bold' : 'text-[#546E6A]'}`}
           >
-            全台地圖
+            景點周邊地圖
           </button>
           <button
             onClick={() => setActiveTab('explorer')}

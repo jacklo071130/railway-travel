@@ -12,6 +12,7 @@ import {
   Building,
   Navigation,
   Compass,
+  MapPin,
 } from 'lucide-react';
 import { TRAStation, TravelPreferences, StationGrade } from '../types';
 import {
@@ -19,6 +20,8 @@ import {
   REGIONS,
   STATION_GRADES,
   COUNTY_LIST,
+  COUNTY_ROW_1,
+  COUNTY_ROW_2,
   POPULAR_ROUTE_SHORTCUTS,
 } from '../data/taiwanStations';
 
@@ -470,30 +473,59 @@ export const StationSelector: React.FC<StationSelectorProps> = ({
                 ))}
               </div>
 
-              {/* County Quick Filter Dropdown/Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none text-xs">
-                <span className="font-bold text-[#546E6A] whitespace-nowrap">縣市快選:</span>
-                <button
-                  onClick={() => setSelectedCounty('all')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
-                    selectedCounty === 'all' ? 'bg-[#81D8CF]/40 text-[#146E64] font-extrabold border border-[#81D8CF]' : 'text-[#546E6A] hover:text-[#122B28]'
-                  }`}
-                >
-                  全部
-                </button>
-                {COUNTY_LIST.map((county) => (
-                  <button
-                    key={county}
-                    onClick={() => setSelectedCounty(county)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                      selectedCounty === county
-                        ? 'bg-[#81D8CF]/40 text-[#146E64] font-extrabold border border-[#81D8CF]'
-                        : 'text-[#546E6A] hover:text-[#122B28] hover:bg-[#FAF8E7]'
-                    }`}
-                  >
-                    {county}
-                  </button>
-                ))}
+              {/* County Quick Filter - 2 Rows for displaying all counties simultaneously */}
+              <div className="flex items-start gap-2 text-xs pt-1 border-t border-[#E5DEAA]/60">
+                <div className="flex items-center gap-1 font-bold text-[#546E6A] whitespace-nowrap pt-1 flex-shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-[#1A8F82]" />
+                  <span>縣市快選:</span>
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  {/* Row 1: 全部 + 北部至中部縣市 */}
+                  <div className="flex items-center flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCounty('all')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedCounty === 'all'
+                          ? 'bg-[#81D8CF]/40 text-[#146E64] font-extrabold border border-[#81D8CF] shadow-2xs'
+                          : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#546E6A] hover:text-[#122B28] border border-[#E5DEAA]'
+                      }`}
+                    >
+                      全部
+                    </button>
+                    {COUNTY_ROW_1.map((county) => (
+                      <button
+                        key={county}
+                        type="button"
+                        onClick={() => setSelectedCounty(county)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                          selectedCounty === county
+                            ? 'bg-[#81D8CF]/40 text-[#146E64] font-extrabold border border-[#81D8CF] shadow-2xs'
+                            : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#546E6A] hover:text-[#122B28] border border-[#E5DEAA]'
+                        }`}
+                      >
+                        {county}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Row 2: 中南部至東部縣市 */}
+                  <div className="flex items-center flex-wrap gap-1">
+                    {COUNTY_ROW_2.map((county) => (
+                      <button
+                        key={county}
+                        type="button"
+                        onClick={() => setSelectedCounty(county)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                          selectedCounty === county
+                            ? 'bg-[#81D8CF]/40 text-[#146E64] font-extrabold border border-[#81D8CF] shadow-2xs'
+                            : 'bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#546E6A] hover:text-[#122B28] border border-[#E5DEAA]'
+                        }`}
+                      >
+                        {county}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
