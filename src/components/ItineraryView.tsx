@@ -8,7 +8,6 @@ import {
   Bookmark,
   Check,
   Copy,
-  Printer,
   Utensils,
   Camera,
   Landmark,
@@ -26,10 +25,12 @@ import {
   ArrowRight,
   Route,
   Layers,
-  ArrowDown
+  ArrowDown,
+  FileDown
 } from 'lucide-react';
 import { DayItinerary, ItineraryStop, TrainTripOption } from '../types';
 import confetti from 'canvas-confetti';
+import { PdfExportModal } from './PdfExportModal';
 
 interface ItineraryViewProps {
   itinerary: DayItinerary;
@@ -45,6 +46,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   onSelectStopOnMap,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Normalize 3 Outbound Train Options
   const outboundList = itinerary.trainRecommendation.outboundList && itinerary.trainRecommendation.outboundList.length > 0
@@ -276,13 +278,13 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
               </button>
 
               <button
-                id="btn-print-itinerary"
-                onClick={() => window.print()}
-                className="flex px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/20 items-center space-x-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
-                title="列印一日遊行程"
+                id="btn-export-ai-pdf"
+                onClick={() => setIsPdfModalOpen(true)}
+                className="flex px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5EC9BD] to-[#81D8CF] hover:from-[#81D8CF] hover:to-[#5EC9BD] text-[#0F3A35] text-xs font-black border border-[#81D8CF] items-center space-x-1.5 transition-all shadow-md active:scale-95 cursor-pointer hover:shadow-[#81D8CF]/40"
+                title="使用 AI 整合匯出完整行程 PDF（含路線地圖、選定車次指引、景點美食與台灣好行接駁）"
               >
-                <Printer className="w-3.5 h-3.5 text-[#E5FAF7]" />
-                <span>列印</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#0F3A35]" />
+                <span>AI 整合匯出 PDF</span>
               </button>
             </div>
           </div>
@@ -1213,9 +1215,41 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 <span>{itinerary.weatherAdvice}</span>
               </div>
             )}
+
+            {/* Bottom PDF Export Action Banner */}
+            <div className="p-4 bg-gradient-to-r from-[#0F3A35] via-[#13695F] to-[#1A8F82] rounded-2xl text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md border border-[#81D8CF]/30">
+              <div className="flex items-center space-x-3 text-center sm:text-left">
+                <div className="p-2.5 rounded-xl bg-white/15 text-[#81D8CF] border border-white/20">
+                  <Sparkles className="w-5 h-5 text-[#F8F5D6]" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">準備出發？匯出高畫質行程表</h4>
+                  <p className="text-xs text-[#FAF8E7]/85 mt-0.5">
+                    一鍵將路線地圖、選定火車車次、一日行程表與台灣好行接駁公車匯出為 PDF 隨身攜帶
+                  </p>
+                </div>
+              </div>
+              <button
+                id="btn-bottom-export-ai-pdf"
+                onClick={() => setIsPdfModalOpen(true)}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#5EC9BD] hover:bg-[#81D8CF] active:scale-95 text-[#0F3A35] text-xs font-extrabold flex items-center justify-center space-x-2 shadow-lg transition-all cursor-pointer flex-shrink-0"
+              >
+                <FileDown className="w-4 h-4 text-[#0F3A35]" />
+                <span>AI 整合匯出 PDF</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* PDF Export Modal */}
+      <PdfExportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        itinerary={itinerary}
+        selectedOutbound={activeOutbound}
+        selectedInbound={activeInbound}
+      />
     </div>
   );
 };
