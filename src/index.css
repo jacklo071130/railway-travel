@@ -59,33 +59,100 @@ body {
 }
 
 @media print {
+  /* Hide the rest of the app and modal chrome */
   nav,
+  header,
+  footer,
   #btn-save-itinerary,
   #btn-copy-itinerary,
   #btn-share-itinerary,
-  #btn-print-itinerary,
-  #btn-export-pdf,
+  #btn-export-ai-pdf,
+  #btn-bottom-export-ai-pdf,
   #station-planner-section,
-  .no-print {
+  .no-print,
+  .modal-no-print,
+  .leaflet-control-container {
     display: none !important;
   }
 
-  body {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 10mm 10mm;
+  }
+
+  html, body {
     background-color: #ffffff !important;
-    color: #0f172a !important;
+    background: #ffffff !important;
+    color: #122B28 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    font-size: 12pt;
   }
 
-  .shadow-md,
-  .shadow-lg,
-  .shadow-xl,
-  .shadow-2xl {
+  /* Reset modal fixed overlay to normal static document flow */
+  #pdf-export-modal-backdrop {
+    position: static !important;
+    display: block !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
     box-shadow: none !important;
+    border: none !important;
+    z-index: auto !important;
   }
 
-  /* Prevent awkward page cuts in stops and train recommendations */
-  .break-inside-avoid {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  #pdf-export-modal-backdrop > div {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #pdf-export-modal-backdrop .flex-1 {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  #pdf-document-printable-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #122B28 !important;
+  }
+
+  /* Prevent awkward page cuts in stops and cards */
+  .break-inside-avoid,
+  [style*="pageBreakInside: avoid"],
+  [style*="page-break-inside: avoid"] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }
 

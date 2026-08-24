@@ -13,14 +13,7 @@ import {
   Sparkles,
   Route,
   Utensils,
-  ShoppingBag,
-  DollarSign,
-  Info,
-  Footprints,
-  Bike,
-  Navigation,
-  ExternalLink,
-  GitMerge
+  Navigation
 } from 'lucide-react';
 import { DayItinerary, TrainTripOption } from '../types';
 
@@ -76,40 +69,83 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
       setIsGenerating(true);
       setGenerateSuccess(false);
 
-      // Dynamically load html2pdf.js
-      const html2pdfModule = await import('html2pdf.js');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const html2pdf = (html2pdfModule.default || html2pdfModule) as any;
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
 
       const element = printContentRef.current;
       const cleanTitle = itinerary.title.replace(/[\\/:*?"<>|]/g, '_');
       const filename = `${cleanTitle}_AI台鐵一日遊行程表_${itinerary.travelDate}.pdf`;
 
-      const opt = {
-        margin: [8, 8, 8, 8], // top, left, bottom, right in mm
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          letterRendering: true,
-          scrollY: 0,
-          logging: false
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait' 
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+      // Render high-definition canvas of printable sheet
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1024,
+      });
 
-      await html2pdf().set(opt).from(element).save();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      const margin = 8; // 8mm margin
+      const contentWidth = pdfWidth - (margin * 2); // 194mm
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / imgWidth;
+      const totalPdfHeight = imgHeight * ratio;
+      const pageContentHeight = pdfHeight - (margin * 2); // 281mm available per page
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      if (totalPdfHeight <= pageContentHeight) {
+        // Single page output
+        pdf.addImage(imgData, 'JPEG', margin, margin, contentWidth, totalPdfHeight);
+      } else {
+        // Clean multi-page generation using canvas slicing
+        const pxPageHeight = Math.floor(canvas.width * (pageContentHeight / contentWidth));
+        let renderedHeight = 0;
+        let pageIndex = 0;
+
+        while (renderedHeight < imgHeight) {
+          const sliceHeight = Math.min(pxPageHeight, imgHeight - renderedHeight);
+          
+          // Create temp canvas for the page slice
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceHeight;
+          const ctx = pageCanvas.getContext('2d');
+          
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(
+              canvas, 
+              0, renderedHeight, canvas.width, sliceHeight, 
+              0, 0, canvas.width, sliceHeight
+            );
+            
+            const pageData = pageCanvas.toDataURL('image/jpeg', 0.95);
+            const slicePdfHeight = sliceHeight * ratio;
+
+            if (pageIndex > 0) {
+              pdf.addPage();
+            }
+            pdf.addImage(pageData, 'JPEG', margin, margin, contentWidth, slicePdfHeight);
+          }
+
+          renderedHeight += pxPageHeight;
+          pageIndex++;
+        }
+      }
+
+      pdf.save(filename);
 
       setGenerateSuccess(true);
       setTimeout(() => {
         setGenerateSuccess(false);
-      }, 3000);
+      }, 3500);
     } catch (err) {
       console.error('PDF generation error, falling back to window.print():', err);
       window.print();
@@ -147,8 +183,8 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-gradient-to-r from-[#0F3A35] via-[#13695F] to-[#1A8F82] border-b border-[#81D8CF]/30 sticky top-0 z-20">
+        {/* Modal Header - Hidden on Print */}
+        <div className="modal-no-print flex items-center justify-between px-4 sm:px-6 py-3.5 bg-gradient-to-r from-[#0F3A35] via-[#13695F] to-[#1A8F82] border-b border-[#81D8CF]/30 sticky top-0 z-20">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 rounded-xl bg-[#81D8CF]/25 text-[#F8F5D6] border border-[#81D8CF]/40">
               <Sparkles className="w-5 h-5" />
@@ -222,7 +258,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
         {/* Modal Body - PDF Sheet Preview Container */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-[#0F3A35]/35 flex justify-center">
           
-          {/* Printable Document Paper Card (Pure White A4-like container for pristine PDF output) */}
+          {/* Printable Document Paper Card (Pure White A4 container for pristine PDF output) */}
           <div 
             ref={printContentRef}
             id="pdf-document-printable-sheet"
@@ -230,7 +266,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
             style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
           >
             {/* 1. PDF Header: Title, Date, Origin & Destination */}
-            <div className="border-b-2 border-[#1A8F82] pb-4 mb-4">
+            <div className="border-b-2 border-[#1A8F82] pb-4 mb-4" style={{ pageBreakInside: 'avoid' }}>
               <div className="flex justify-between items-start">
                 <div className="flex-1 pr-4">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#E5FAF7] text-[#13695F] text-xs font-bold mb-1.5 border border-[#81D8CF]/40">
@@ -639,7 +675,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
             )}
 
             {/* Document Footer */}
-            <div className="pt-2.5 border-t border-[#E5DEAA] text-center text-[9px] text-[#78928E] flex justify-between items-center">
+            <div className="pt-2.5 border-t border-[#E5DEAA] text-center text-[9px] text-[#78928E] flex justify-between items-center" style={{ pageBreakInside: 'avoid' }}>
               <span>台灣鐵道智慧旅遊指南・AI 一日遊行程規劃 (支援台鐵時刻與台灣好行)</span>
               <span>生成日期：{itinerary.createdAt ? new Date(itinerary.createdAt).toLocaleDateString('zh-TW') : '本日'}</span>
             </div>
@@ -647,8 +683,8 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
         </div>
 
-        {/* Modal Bottom Footer Bar */}
-        <div className="px-4 sm:px-6 py-3 bg-[#FAF8E7] border-t border-[#E5DEAA] flex items-center justify-between">
+        {/* Modal Bottom Footer Bar - Hidden on Print */}
+        <div className="modal-no-print px-4 sm:px-6 py-3 bg-[#FAF8E7] border-t border-[#E5DEAA] flex items-center justify-between">
           <span className="text-xs text-[#546E6A]">
             按鍵盤 <kbd className="px-1.5 py-0.5 bg-white text-[#122B28] rounded border border-[#E5DEAA] text-[11px] font-mono">Esc</kbd> 即可關閉預覽
           </span>
