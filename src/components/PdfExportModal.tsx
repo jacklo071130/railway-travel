@@ -8,7 +8,8 @@ import {
   MapPin, 
   Calendar, 
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Bus
 } from 'lucide-react';
 import { DayItinerary, TrainTripOption } from '../types';
 
@@ -458,19 +459,25 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
               </div>
             </div>
 
-            {/* Section 3: Station Amenities & Luggage Storage */}
-            {itinerary.stationAmenities && (
+            {/* Section 3: Transit Guide & Taiwan Tourist Shuttle */}
+            {itinerary.transitGuide && (
               <div className="mb-4 p-3.5 rounded-lg bg-[#FAF8E7]/60 border border-[#E5DEAA] text-xs" style={{ pageBreakInside: 'avoid' }}>
                 <h3 className="font-bold text-[#122B28] mb-1.5 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#1A8F82]" />
-                  <span>{itinerary.destinationStation.name} 站周邊設施與行李寄放</span>
+                  <Bus className="w-3.5 h-3.5 text-[#1A8F82]" />
+                  <span>{itinerary.destinationStation.name} 站周邊交通與台灣好行接駁</span>
                 </h3>
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-[#546E6A]">
-                  <div>
-                    <strong>🧳 行李寄放：</strong>{itinerary.stationAmenities.luggageStorage || '車站置物櫃或行李房'}
-                  </div>
-                  <div>
-                    <strong>🚲 YouBike / 租車：</strong>{itinerary.stationAmenities.bikeRental || '站前設有公共自行車站點'}
+                <div className="space-y-1.5 text-[11px] text-[#546E6A]">
+                  {itinerary.transitGuide.taiwanTripBus && (
+                    <div className="p-2 rounded bg-white border border-[#81D8CF]/40 text-[#122B28]">
+                      <strong>🚍 台灣好行觀光公車：</strong>
+                      <span className="font-bold text-[#13695F]">{itinerary.transitGuide.taiwanTripBus.routeName}</span>
+                      <span className="ml-2 text-[#546E6A]">（搭乘處：{itinerary.transitGuide.taiwanTripBus.boardingLocation}・{itinerary.transitGuide.taiwanTripBus.fareOrPassInfo}）</span>
+                      <div className="text-[10px] text-[#1A8F82] mt-0.5">即時動態查詢：https://www.taiwantrip.com.tw/</div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <div><strong>🚲 YouBike / 接駁：</strong>{itinerary.transitGuide.youbikeInfo}</div>
+                    <div><strong>🚉 出站寄物：</strong>{itinerary.transitGuide.stationExitTips}</div>
                   </div>
                 </div>
               </div>

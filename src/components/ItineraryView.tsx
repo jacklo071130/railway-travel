@@ -142,12 +142,12 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       .map((t, i) => formatOption(t, i, i === selectedInboundIdx))
       .join('\n');
 
-    const text = `🚂【${itinerary.title}】\n📅 旅遊日期：${itinerary.travelDate}\n💰 預估人均花費：約 NT$ ${itinerary.estimatedTotalBudget}\n\n🚆【台鐵去程推薦班次與轉乘指引 (3班時段)】\n${outboundSummary}\n\n🚆【台鐵回程推薦班次與轉乘指引 (3班時段)】\n${inboundSummary}\n\n🗺️【一日遊行程時間表】\n${itinerary.stops
+    const text = `🚂【${itinerary.title}】\n📅 旅遊日期：${itinerary.travelDate}\n💰 預估人均花費：約 NT$ ${itinerary.estimatedTotalBudget}\n\n🚆【台鐵去程推薦班次與轉乘指引 (3班時段)】\n${outboundSummary}\n\n🚆【台鐵回程推薦班次與轉乘指引 (3班時段)】\n${inboundSummary}\n\n🚌【台灣好行觀光公車接駁】\n${itinerary.transitGuide.taiwanTripBus ? `路線：${itinerary.transitGuide.taiwanTripBus.routeName}\n乘車處：${itinerary.transitGuide.taiwanTripBus.boardingLocation}\n票價優惠：${itinerary.transitGuide.taiwanTripBus.fareOrPassInfo}\n即時動態查詢：${itinerary.transitGuide.taiwanTripBus.officialUrl || 'https://www.taiwantrip.com.tw/'}` : '台灣好行官網時刻：https://www.taiwantrip.com.tw/'}\n\n🗺️【一日遊行程時間表】\n${itinerary.stops
       .map(
         (s, idx) =>
           `${idx + 1}. [${s.timeSlot}] ${s.placeName} (${s.highlight})\n   📍 地址：${s.address}\n   🚶 交通：${s.transportFromPrevious.durationText} - ${s.transportFromPrevious.details}\n   💡 導遊貼士：${s.tips || ''}`
       )
-      .join('\n\n')}\n\n🍜 必吃美食：${itinerary.localSpecialties.mustEat.join('、')}\n🎁 必買伴手禮：${itinerary.localSpecialties.souvenirs.join('、')}\n\n台鐵官網時刻查詢：https://www.railway.gov.tw/tra-tip-web/tip`;
+      .join('\n\n')}\n\n🍜 必吃美食：${itinerary.localSpecialties.mustEat.join('、')}\n🎁 必買伴手禮：${itinerary.localSpecialties.souvenirs.join('、')}\n\n台鐵官網時刻查詢：https://www.railway.gov.tw/tra-tip-web/tip\n台灣好行官網：https://www.taiwantrip.com.tw/`;
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -986,6 +986,95 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
         </div>
       </div>
 
+      {/* Taiwan Tourist Shuttle (台灣好行) Dedicated Highlight Card */}
+      {itinerary.transitGuide.taiwanTripBus && (
+        <div className="bg-gradient-to-br from-[#E5FAF7] via-[#FAF8E7]/40 to-white rounded-2xl shadow-md border-2 border-[#81D8CF]/70 p-5 sm:p-6 transition-all">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#81D8CF]/30 mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-xl bg-[#1A8F82] text-white shadow-sm flex items-center justify-center">
+                <Bus className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-bold text-[#122B28]">
+                    台灣好行 Taiwan Tourist Shuttle 觀光接駁專車
+                  </h3>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#1A8F82] text-white shadow-xs">
+                    官方觀光接駁
+                  </span>
+                </div>
+                <p className="text-xs text-[#546E6A] mt-0.5">
+                  精選景點直達免自駕，無縫串聯 {itinerary.destinationStation.name}火車站 與在地知名景區
+                </p>
+              </div>
+            </div>
+
+            {/* Link to Taiwan Tourist Shuttle Official Website */}
+            <a
+              href={itinerary.transitGuide.taiwanTripBus.officialUrl || 'https://www.taiwantrip.com.tw/'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-[#1A8F82] text-[#13695F] hover:text-white border border-[#81D8CF] text-xs font-bold shadow-sm transition-all cursor-pointer group"
+              title="前往台灣好行官方網站查詢即時公車動態、最新時刻表與套票優惠"
+            >
+              <span>台灣好行官網時刻與動態</span>
+              <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Route Name & Boarding Location */}
+            <div className="p-3.5 rounded-xl bg-white/95 border border-[#81D8CF]/40 space-y-1.5">
+              <span className="text-xs font-bold text-[#13695F] flex items-center gap-1.5">
+                <Route className="w-4 h-4 text-[#1A8F82]" />
+                推薦接駁路線與站點
+              </span>
+              <p className="font-bold text-sm text-[#122B28]">
+                {itinerary.transitGuide.taiwanTripBus.routeName}
+              </p>
+              <div className="text-xs text-[#4E6864] flex items-start gap-1 pt-1">
+                <MapPin className="w-3.5 h-3.5 text-[#1A8F82] flex-shrink-0 mt-0.5" />
+                <span>搭乘地點：{itinerary.transitGuide.taiwanTripBus.boardingLocation}</span>
+              </div>
+            </div>
+
+            {/* Key Spots on Route */}
+            <div className="p-3.5 rounded-xl bg-white/95 border border-[#81D8CF]/40 space-y-1.5">
+              <span className="text-xs font-bold text-[#13695F] flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#8C7C20]" />
+                沿線串聯主要景點
+              </span>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {(itinerary.transitGuide.taiwanTripBus.highlightSpots || []).map((spot, i) => (
+                  <span
+                    key={i}
+                    className="text-xs font-medium px-2 py-0.5 rounded-md bg-[#FAF8E7] text-[#665A15] border border-[#E5DEAA]"
+                  >
+                    {spot}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Fare, TPASS & Travel Tips */}
+            <div className="p-3.5 rounded-xl bg-white/95 border border-[#81D8CF]/40 space-y-1.5">
+              <span className="text-xs font-bold text-[#13695F] flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-[#1A8F82]" />
+                票價乘車優惠與貼士
+              </span>
+              <p className="text-xs text-[#4E6864] leading-relaxed">
+                💳 {itinerary.transitGuide.taiwanTripBus.fareOrPassInfo}
+              </p>
+              {itinerary.transitGuide.taiwanTripBus.tips && (
+                <p className="text-xs text-[#665A15] bg-[#FAF8E7] p-2 rounded-lg border border-[#E5DEAA]/60 leading-relaxed">
+                  💡 {itinerary.transitGuide.taiwanTripBus.tips}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Transit Guide & Local Specialties Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Transit Guide */}
@@ -1020,9 +1109,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
             </div>
 
             <div className="p-3 bg-[#FAF8E7] rounded-xl border border-[#E5DEAA]">
-              <span className="font-bold text-[#122B28] block mb-1">
-                🚌 在地公車 / 台灣好行客運
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-[#122B28]">
+                  🚌 在地公車 / 台灣好行客運
+                </span>
+                <a
+                  href="https://www.taiwantrip.com.tw/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#1A8F82] hover:underline flex items-center gap-0.5 font-medium cursor-pointer"
+                >
+                  <span>台灣好行官網</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
               <p className="text-[#4E6864]">{itinerary.transitGuide.localBusSummary}</p>
             </div>
 

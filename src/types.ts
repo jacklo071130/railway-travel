@@ -90,6 +90,16 @@ export interface TrainTripOption {
   legs?: TrainLeg[]; // 詳細各區間乘車與轉乘資訊
 }
 
+export interface TaiwanTripBusInfo {
+  routeName: string; // 例如：「台灣好行 綠19 礁溪線」或「台灣好行 7322 阿里山線」
+  routeNumber?: string; // 例如：「綠19」、「7322」、「皇冠北海岸線」
+  boardingLocation: string; // 例如：「火車站前站客運候車亭 / 轉運站第1月台」
+  highlightSpots: string[]; // 沿線行經景點，例如：['湯圍溝溫泉公園', '五峰旗瀑布', '林美石磐步道']
+  fareOrPassInfo: string; // 票價與票券優惠說明，例如：「支援 TPASS 行政院通勤月票、悠遊卡/一卡通，亦可購買台灣好行一日乘車券」
+  officialUrl: string; // 'https://www.taiwantrip.com.tw/'
+  tips?: string; // 搭乘小提示，例如：「班次固定且專為景點串聯設計，建議預先至台灣好行官網查詢即時公車動態」
+}
+
 export interface DayItinerary {
   id: string;
   createdAt: string;
@@ -112,6 +122,7 @@ export interface DayItinerary {
     stationExitTips: string;
     youbikeInfo: string;
     localBusSummary: string;
+    taiwanTripBus?: TaiwanTripBusInfo;
     taxiTips: string;
     precautions: string[];
   };

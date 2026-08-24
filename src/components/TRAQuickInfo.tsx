@@ -34,7 +34,7 @@ export const TRAQuickInfo: React.FC = () => {
       </div>
 
       {/* Grid of Key Topics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Ticket booking rules */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5DEAA] space-y-4">
           <div className="flex items-center space-x-3 pb-3 border-b border-[#E5DEAA]/60">
@@ -94,8 +94,51 @@ export const TRAQuickInfo: React.FC = () => {
             </div>
 
             <div className="p-3 bg-[#FAF8E7] rounded-xl border border-[#E5DEAA]">
-              <strong className="text-[#122B28] block mb-1">📍 YouBike 2.0 串聯：</strong>
+              <strong className="text-[#122B28] block mb-1">📍 YouBike 2.0 站點：</strong>
               全台近 80% 主要火車站站前廣場皆設有 YouBike 租借站，可使用悠遊卡或手機 App 掃碼租借。
+            </div>
+          </div>
+        </div>
+
+        {/* Taiwan Tourist Shuttle */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5DEAA] space-y-4">
+          <div className="flex items-center space-x-3 pb-3 border-b border-[#E5DEAA]/60">
+            <div className="p-2.5 rounded-xl bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]/40">
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#122B28]">台灣好行 觀光景點接駁</h3>
+              <p className="text-xs text-[#546E6A]">專為無車族設計的景點接駁巴士</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-xs sm:text-sm text-[#546E6A]">
+            <div className="p-3 bg-[#FAF8E7] rounded-xl border border-[#E5DEAA]">
+              <strong className="text-[#122B28] block mb-1">🚍 什麼是台灣好行？</strong>
+              交通部觀光署專為自由行旅客規劃的觀光公車，從各主要火車站出發直達各大著名風景區（如九份、北海岸、日月潭、阿里山、太魯閣等）。
+            </div>
+
+            <div className="p-3 bg-[#FAF8E7] rounded-xl border border-[#E5DEAA]">
+              <strong className="text-[#122B28] block mb-1">💳 票價與 TPASS 優惠：</strong>
+              支援多卡通（悠遊卡、一卡通）、行政院 TPASS 通勤月票，多數路線享持電子票證搭乘優惠或一日無限搭乘套票。
+            </div>
+
+            <div className="p-3 bg-[#E5FAF7] rounded-xl border border-[#81D8CF]/40">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#13695F] text-xs">🌐 官方網站即時動態查詢：</span>
+                <a
+                  href="https://www.taiwantrip.com.tw/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-[#1A8F82] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>訪問官網</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <p className="text-[11px] text-[#4E6864] mt-1">
+                出發前可至台灣好行官網查詢各路線最新動態公車到站時間與站牌位置。
+              </p>
             </div>
           </div>
         </div>

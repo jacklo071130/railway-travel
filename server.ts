@@ -153,7 +153,7 @@ app.post('/api/generate-itinerary', async (req, res) => {
      - transferSummary 清楚說明，如「於【瑞芳站】轉乘 平溪深澳線（等候約 12 分鐘）」。
      - legs 陣列詳細列出每一段的「搭乘車種、車次號、起站、迄站、出發時間、抵達時間、轉乘等候時間、乘車備註」。
 3. 行程以目的地火車站為核心放射狀規劃，景點與美食皆須為真實存在的在地知名店家與觀光勝地。
-4. 路線順序需具備高度地理合理性（不走回頭路），明確說明由火車站出發如何轉乘（如步行、YouBike、台灣好行客運、租機車、計程車）。
+4. 路線順序需具備高度地理合理性（不走回頭路），目的地周邊交通請積極優先參考並整合【台灣好行 Taiwan Tourist Shuttle (官方網站: https://www.taiwantrip.com.tw/ )】觀光接駁公車，於 transitGuide.taiwanTripBus 提供精準的台灣好行路線名稱（如礁溪線綠19、冬山河線綠21、皇冠北海岸線716、阿里山線7322、日月潭線6670、太魯閣線302、鹿港祈福線6936、縱谷花蓮線303等）、上車站牌、行經景點、票價與TPASS優惠說明，並提供台灣好行官網連結（https://www.taiwantrip.com.tw/）供旅客查詢即時動態時刻。
 5. 包含道地的火車出發與回程車次建議（如新自強3000、普悠瑪、自強號、區間快車）、台鐵便當與在地必吃名產。
 6. 每一個景點與餐廳都需提供具體的停留時間、特色介紹、推薦餐點或拍照點，以及精準的地理座標(lat, lng)與地址。
 7. 必須以繁體中文（台灣習慣用語）輸出嚴格符合 JSON Schema 的內容。`;
@@ -316,6 +316,20 @@ app.post('/api/generate-itinerary', async (req, res) => {
                 stationExitTips: { type: Type.STRING, description: '目的地火車站出站導引（前後站出口、行李寄存櫃位置）' },
                 youbikeInfo: { type: Type.STRING, description: '火車站周圍YouBike租借站與騎乘路線建議' },
                 localBusSummary: { type: Type.STRING, description: '在地接駁公車或台灣好行路線搭乘指南' },
+                taiwanTripBus: {
+                  type: Type.OBJECT,
+                  properties: {
+                    routeName: { type: Type.STRING, description: '台灣好行觀光公車路線名稱（如 台灣好行 礁溪線 (綠19)、台灣好行 阿里山線 (7322)、台灣好行 皇冠北海岸線 (716) 等）' },
+                    routeNumber: { type: Type.STRING, description: '路線號碼或簡稱，如 綠19、7322、716、6670 等' },
+                    boardingLocation: { type: Type.STRING, description: '火車站前站或轉運站搭乘地點與月台' },
+                    highlightSpots: { type: Type.ARRAY, items: { type: Type.STRING }, description: '本台灣好行路線串聯之主要景點清單' },
+                    fareOrPassInfo: { type: Type.STRING, description: '票價或票券優惠說明（支援 TPASS 行政院通勤月票、悠遊卡/一卡通、一日券等）' },
+                    officialUrl: { type: Type.STRING, description: 'https://www.taiwantrip.com.tw/' },
+                    tips: { type: Type.STRING, description: '台灣好行搭乘小貼士（如出發前至官網查詢即時公車動態、班距與末班車叮嚀）' },
+                  },
+                  required: ['routeName', 'boardingLocation', 'fareOrPassInfo', 'officialUrl'],
+                  description: '台灣好行觀光景點接駁公車專屬推薦資訊（參考官方網站 https://www.taiwantrip.com.tw/）',
+                },
                 taxiTips: { type: Type.STRING, description: '計程車招呼站與預估短程跳表費用' },
                 precautions: {
                   type: Type.ARRAY,
@@ -403,6 +417,21 @@ app.post('/api/generate-itinerary', async (req, res) => {
 
     parsed.trainRecommendation.traOfficialUrl = 'https://www.railway.gov.tw/tra-tip-web/tip';
 
+    // Ensure Taiwan Tourist Shuttle information is rich and points to official website
+    if (!parsed.transitGuide) {
+      parsed.transitGuide = {
+        stationExitTips: '出站前站設有旅客服務中心與置物櫃。',
+        youbikeInfo: '站前設有 YouBike 租借站。',
+        localBusSummary: '站前客運站提供市區與台灣好行接駁公車。',
+        precautions: ['建議準備零錢或電子票證。'],
+      };
+    }
+    if (!parsed.transitGuide.taiwanTripBus || !parsed.transitGuide.taiwanTripBus.routeName) {
+      parsed.transitGuide.taiwanTripBus = getTaiwanTripInfo(destination?.name || '', destination?.county || '');
+    } else {
+      parsed.transitGuide.taiwanTripBus.officialUrl = 'https://www.taiwantrip.com.tw/';
+    }
+
     res.json({ itinerary: parsed });
   } catch (error: any) {
     console.error('Error generating itinerary:', error);
@@ -429,8 +458,8 @@ app.post('/api/ask-assistant', async (req, res) => {
     const ai = getAiClient(customKey);
     if (!ai) {
       return res.json({
-        reply: `您好！目前您正在查詢 ${station?.name || '台灣鐵道'} 的旅遊資訊。台鐵官方網站時刻表查詢與票價可至：https://www.railway.gov.tw/tra-tip-web/tip 。在該站附近推薦品嚐在地小吃，並可使用 YouBike 騎乘遊覽主要景點！`,
-        suggestedActions: ['查詢台鐵時刻表', '推薦雨天備案景點', '推薦附近必買伴手禮'],
+        reply: `您好！目前您正在查詢 ${station?.name || '台灣鐵道'} 的旅遊資訊。台鐵官方網站時刻表查詢與票價可至：https://www.railway.gov.tw/tra-tip-web/tip 。如需搭乘觀光接駁公車，推薦參考「台灣好行 (https://www.taiwantrip.com.tw/)」，站前亦可使用 YouBike 騎乘遊覽主要景點！`,
+        suggestedActions: ['查詢台灣好行接駁公車', '推薦雨天備案景點', '推薦附近必買伴手禮'],
       });
     }
 
@@ -441,8 +470,9 @@ ${currentItinerary ? `旅客目前已規劃的行程標題為「${currentItinera
 旅客提問：${message}
 
 請以親切、專業、條理分明的繁體中文回答。
-若提及火車車次或票務，請提醒可利用台鐵官方系統（https://www.railway.gov.tw/tra-tip-web/tip）查詢最新時刻。
-若提及交通，請提供明確的轉乘、步行或 YouBike 建議。回答字數適中（約200-300字）。最後提供2-3個後續可追問的問題。`;
+- 若提及火車車次或票務，請提醒可利用台鐵官方系統（https://www.railway.gov.tw/tra-tip-web/tip）查詢最新時刻。
+- 若提及觀光公車、景點接駁或客運交通，請特別推薦旅客參考【台灣好行 Taiwan Tourist Shuttle (官方網站: https://www.taiwantrip.com.tw/ )】，說明對應的路線名稱、乘車方式或票價優惠（如支援 TPASS 行政院通勤月票、悠遊卡/一卡通等）。
+- 若提及交通，請提供明確的轉乘、步行、YouBike 或台灣好行接駁建議。回答字數適中（約200-300字）。最後提供2-3個後續可追問的問題。`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',
@@ -1000,6 +1030,196 @@ function buildTrainRecommendations(origin: any, destination: any) {
   return { outboundOptions, inboundOptions };
 }
 
+// Helper to get Taiwan Tourist Shuttle info for destinations
+function getTaiwanTripInfo(destName: string, destCounty: string) {
+  if (['礁溪', '宜蘭', '羅東', '頭城', '冬山', '蘇澳'].includes(destName) || destCounty.includes('宜蘭')) {
+    if (destName === '礁溪') {
+      return {
+        routeName: '台灣好行 礁溪線 (綠19)',
+        routeNumber: '綠19',
+        boardingLocation: '礁溪火車站前站公車站牌 / 礁溪轉運站第1月台',
+        highlightSpots: ['湯圍溝溫泉公園', '五峰旗瀑布風景區', '林美石磐步道', '跑馬古道'],
+        fareOrPassInfo: '一段票 20 元，支援 TPASS 通勤月票、悠遊卡、一卡通及台灣好行一日乘車券。',
+        officialUrl: 'https://www.taiwantrip.com.tw/',
+        tips: '專為礁溪溫泉與步道景點串聯設計，班次固定，出發前可於台灣好行官網查詢即時公車動態。',
+      };
+    } else if (destName === '羅東' || destName === '冬山') {
+      return {
+        routeName: '台灣好行 冬山河線 (綠21)',
+        routeNumber: '綠21',
+        boardingLocation: '羅東火車站後站（羅東轉運站）',
+        highlightSpots: ['羅東林業文化園區', '國立傳統藝術中心', '冬山河親水公園', '利澤老街'],
+        fareOrPassInfo: '依里程計費，支援 TPASS 通勤月票與電子票證乘車優惠。',
+        officialUrl: 'https://www.taiwantrip.com.tw/',
+        tips: '串聯羅東市區與冬山河經典景區，假日班次頻繁，推薦於台灣好行官網預查時刻。',
+      };
+    }
+    return {
+      routeName: '台灣好行 壯圍沙丘線 (綠18)',
+      routeNumber: '綠18',
+      boardingLocation: '宜蘭火車站前站 / 宜蘭轉運站',
+      highlightSpots: ['幾米廣場', '壯圍沙丘生態園區', '頭城濱海森林公園'],
+      fareOrPassInfo: '支援 TPASS 通勤月票與電子票證乘車。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '沿途飽覽宜蘭海岸線與文創景點，班次請參考台灣好行官網即時動態。',
+    };
+  }
+
+  if (['瑞芳', '九份', '十分', '猴硐', '福隆', '基隆', '雙溪'].includes(destName)) {
+    return {
+      routeName: '台灣好行 黃金福隆線 (856)',
+      routeNumber: '856',
+      boardingLocation: '瑞芳火車站區民廣場站牌 / 福隆遊客中心',
+      highlightSpots: ['九份老街', '黃金博物館', '水湳洞陰陽海', '鼻頭角步道', '福隆海水浴場'],
+      fareOrPassInfo: '採段次計費，每段 15 元，支援 TPASS 基北北桃都會通與電子票證。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '黃金山城與東北角海岸接駁首選，假日人潮多請提早候車並至台灣好行官網確認最新班表。',
+    };
+  }
+
+  if (['淡水', '台北', '松山', '板橋'].includes(destName) || destCounty.includes('台北') || destCounty.includes('新北')) {
+    return {
+      routeName: '台灣好行 皇冠北海岸線 (716)',
+      routeNumber: '716',
+      boardingLocation: '捷運淡水站前公車站牌第5月台',
+      highlightSpots: ['淺水灣海濱公園', '白沙灣', '石門洞', '野柳地質公園'],
+      fareOrPassInfo: '段次計費，支援 TPASS 通勤月票與台灣好行北海岸套票。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '北海岸看海與地質奇觀必備觀光巴士，最新發車時間可至台灣好行官網查詢。',
+    };
+  }
+
+  if (['新竹', '竹東', '內灣', '竹北'].includes(destName) || destCounty.includes('新竹')) {
+    return {
+      routeName: '台灣好行 獅山線 (5700)',
+      routeNumber: '5700',
+      boardingLocation: '竹北火車站前站 / 高鐵新竹站 / 竹東火車站',
+      highlightSpots: ['竹東綠光廣場', '北埔老街', '綠世界生態農場', '獅頭山風景區'],
+      fareOrPassInfo: '依里程計費，支援電子票證、TPASS 桃竹竹苗通勤月票。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '直達客家文化重鎮北埔老街與綠世界，免自駕輕鬆走訪，詳情參閱台灣好行官網。',
+    };
+  }
+
+  if (['苗栗', '竹南', '三義', '通霄'].includes(destName) || destCounty.includes('苗栗')) {
+    return {
+      routeName: '台灣好行 南庄線 (5805A)',
+      routeNumber: '5805A',
+      boardingLocation: '竹南火車站東站客運候車亭',
+      highlightSpots: ['南庄遊客中心', '南庄老街桂花巷', '向天湖', '蓬萊溪護魚步道'],
+      fareOrPassInfo: '支援電子票證與 TPASS 桃竹竹苗通勤月票。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '竹南出站轉乘無縫直達南庄慢城，最新動態請隨時查詢台灣好行官方網站。',
+    };
+  }
+
+  if (['台中', '新烏日', '豐原', '清水', '大甲'].includes(destName) || destCounty.includes('台中')) {
+    return {
+      routeName: '台灣好行 台中時尚城中城線 (11路) / 谷關線 (888)',
+      routeNumber: '11 / 888',
+      boardingLocation: '台中火車站一樓公車轉運月台',
+      highlightSpots: ['台中火車站古蹟', '綠川水岸廊道', '審計新村', '草悟道', '國立自然科學博物館'],
+      fareOrPassInfo: '台中市區公車享市民優惠，支援電子票證與 TPASS 中彰投苗月票。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '環狀串聯台中精華文創與景點，即時到站資訊請參考台灣好行官網。',
+    };
+  }
+
+  if (['彰化', '員林', '二水', '田中'].includes(destName) || destCounty.includes('彰化')) {
+    return {
+      routeName: '台灣好行 鹿港祈福線 (6936)',
+      routeNumber: '6936',
+      boardingLocation: '彰化火車站左前方彰化客運總站',
+      highlightSpots: ['彰化八卦山大佛', '鹿港老街', '鹿港天后宮', '桂花巷藝術村', '台灣玻璃館'],
+      fareOrPassInfo: '支援 TPASS 通勤月票、電子票證與一日券。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '出站直達古蹟重鎮鹿港，省去轉車與停車困擾，班表資訊請參閱台灣好行官網。',
+    };
+  }
+
+  if (['車埕', '集集', '水里', '二水'].includes(destName) || destCounty.includes('南投')) {
+    return {
+      routeName: '台灣好行 日月潭線 (6670) / 車埕線 (6671)',
+      routeNumber: '6670 / 6671',
+      boardingLocation: '台中火車站 / 水里站 / 車埕站前候車亭',
+      highlightSpots: ['車埕木業展示館', '集集綠色隧道', '向山遊客中心', '水社碼頭'],
+      fareOrPassInfo: '支援電子票證半價優惠與 TPASS 中彰投苗通勤月票。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '無縫串聯集集支線鐵道與日月潭湖畔風光，發車時間請至台灣好行官網查詢。',
+    };
+  }
+
+  if (['嘉義', '民雄', '奮起湖', '大林', '水上'].includes(destName) || destCounty.includes('嘉義')) {
+    return {
+      routeName: '台灣好行 阿里山線 (7322 / 7329) & 故宮南院線 (106)',
+      routeNumber: '7322 / 106',
+      boardingLocation: '嘉義火車站前站客運站候車站牌',
+      highlightSpots: ['檜意森活村', '阿里山森林遊樂區', '奮起湖老街', '國立故宮博物院南部院區'],
+      fareOrPassInfo: '支援 TPASS 嘉義通勤月票、悠遊卡、一卡通及多元支付。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '阿里山賞日出雲海與森林浴第一品牌，假日熱門時段建議預先至台灣好行官網預約或查詢班次。',
+    };
+  }
+
+  if (['台南', '新營', '善化', '永康', '保安'].includes(destName) || destCounty.includes('台南')) {
+    return {
+      routeName: '台灣好行 99安平台江線 & 88府城巡迴線',
+      routeNumber: '99 / 88',
+      boardingLocation: '台南火車站南站 / 北站公車站牌',
+      highlightSpots: ['赤崁樓', '孔廟文化園區', '安平古堡', '安平老街', '四草綠色隧道'],
+      fareOrPassInfo: '一段票 18 元，支援 TPASS 南高屏通勤月票與大台南公車一日券。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '暢遊府城古蹟老街與台江國家公園生態的最佳接駁，時刻表請至台灣好行官網查詢。',
+    };
+  }
+
+  if (['高雄', '新左營', '鳳山', '岡山', '橋頭'].includes(destName) || destCounty.includes('高雄')) {
+    return {
+      routeName: '台灣好行 哈佛快線 (E02) / 大樹祈福線',
+      routeNumber: 'E02',
+      boardingLocation: '高鐵左營站 / 新左營火車站前公車站第2月台',
+      highlightSpots: ['佛陀紀念館', '大樹舊鐵橋濕地公園', '三和瓦窯', '義大世界'],
+      fareOrPassInfo: '支援 TPASS 南高屏通勤月票與電子票證。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '直達佛陀紀念館與大樹文化景點，快速便捷，即時動態請上台灣好行官方網站查詢。',
+    };
+  }
+
+  if (['花蓮', '新城', '吉安', '壽豐', '光復', '玉里', '瑞穗'].includes(destName) || destCounty.includes('花蓮')) {
+    return {
+      routeName: '台灣好行 太魯閣線 (302) / 縱谷花蓮線 (303)',
+      routeNumber: '302 / 303',
+      boardingLocation: '花蓮火車站前站客運轉運站第1月台 / 新城火車站',
+      highlightSpots: ['七星潭風景區', '太魯閣峽谷', '慶修院', '鯉魚潭', '花蓮糖廠'],
+      fareOrPassInfo: '支援花蓮 TPASS 通勤月票、電子票證享優惠、亦有一日與二日券。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '花蓮大山大海與縱谷田園風光接駁專車，即時公車動態可至台灣好行官網查詢。',
+    };
+  }
+
+  if (['台東', '知本', '鹿野', '關山', '池上'].includes(destName) || destCounty.includes('台東')) {
+    return {
+      routeName: '台灣好行 東部海岸線 (8101A) / 縱谷鹿野線 (8168A)',
+      routeNumber: '8101A / 8168A',
+      boardingLocation: '台東火車站前站客運候車站牌第2月台',
+      highlightSpots: ['小野柳', '加路蘭遊憩區', '三仙台', '鹿野高台熱氣球', '初鹿牧場'],
+      fareOrPassInfo: '支援 TPASS 行政院通勤月票與電子票證乘車優惠。',
+      officialUrl: 'https://www.taiwantrip.com.tw/',
+      tips: '縱覽太平洋海岸與鹿野茶鄉美景，出發前建議上台灣好行官網查詢即時班表與行車動態。',
+    };
+  }
+
+  return {
+    routeName: `${destName} 台灣好行觀光接駁公車`,
+    routeNumber: '觀光接駁',
+    boardingLocation: `${destName}火車站前站公車站牌 / 客運轉運站`,
+    highlightSpots: ['火車站周邊商圈', '在地指標風景區', '文化園區'],
+    fareOrPassInfo: '支援 TPASS 行政院通勤月票、悠遊卡、一卡通及多元支付。',
+    officialUrl: 'https://www.taiwantrip.com.tw/',
+    tips: '專為自由行旅客設計的景點接駁觀光巴士，詳細路線與時刻表可至台灣好行官方網站查詢。',
+  };
+}
+
 // Fallback generator for rich data when offline or building
 function generateFallbackItinerary(origin: any, destination: any, preferences: any, travelDate: string) {
   const destName = destination?.name || '礁溪';
@@ -1200,6 +1420,7 @@ function generateFallbackItinerary(origin: any, destination: any, preferences: a
       stationExitTips: `${destName}火車站出站後前站設有旅客服務中心與行李自動寄物櫃，建議輕裝出發。`,
       youbikeInfo: `${destName}火車站前廣場設有 YouBike 2.0 租借站，周邊騎乘環境平順，支援電子票證與悠遊卡。`,
       localBusSummary: '站前設有市區公車與台灣好行接駁站牌，發車班次密集，可直達主要風景區。',
+      taiwanTripBus: getTaiwanTripInfo(destName, destCounty),
       taxiTips: '站前設有排班計程車站，市區各景點單程跳表約 100~180 元。',
       precautions: [
         '部分在地老店僅收現金，建議備妥零錢。',
