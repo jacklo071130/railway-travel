@@ -28,7 +28,7 @@ export default function App() {
       geminiApiKey: '',
       googleMapsApiKey: '',
       isGeminiValid: false,
-      isMapsValid: false,
+      isMapsValid: true,
     };
   });
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -631,7 +631,7 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* API Key Status Notice Bar (if unconfigured) */}
-        {(!apiKeys.isGeminiValid || !apiKeys.isMapsValid) && (
+        {!apiKeys.isGeminiValid && (
           <div className="p-3.5 bg-[#F8F5D6] rounded-2xl border-2 border-[#81D8CF] flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
             <div className="flex items-center space-x-2.5">
               <div className="p-1.5 rounded-lg bg-[#81D8CF]/30 text-[#146E64] border border-[#81D8CF]">
@@ -639,14 +639,13 @@ export default function App() {
               </div>
               <div>
                 <p className="font-bold text-[#122B28] flex items-center gap-2">
-                  <span>API 金鑰授權狀態</span>
+                  <span>Gemini AI API 金鑰授權</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-[#166E64] font-bold border border-[#81D8CF]">
-                    {apiKeys.isGeminiValid ? 'Gemini AI 已啟用' : 'Gemini AI 待驗證'} •{' '}
-                    {apiKeys.isMapsValid ? 'Google Maps 已啟用' : 'Google Maps 待設定'}
+                    {apiKeys.isGeminiValid ? 'Gemini AI 已啟用' : 'Gemini AI 待設定'}
                   </span>
                 </p>
                 <p className="text-[#4E6864] mt-0.5">
-                  輸入並驗證 Gemini AI 與 Google Maps API 金鑰，即可享受客製化智能行程與景點周邊地圖導航。
+                  輸入並驗證 Gemini AI API 金鑰，即可享受客製化智能一日遊行程與隨身 AI 導遊（互動地圖無需金鑰即可使用）。
                 </p>
               </div>
             </div>
@@ -657,7 +656,7 @@ export default function App() {
               className="px-3.5 py-1.5 rounded-xl bg-[#1A8F82] hover:bg-[#13695F] text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer"
             >
               <Key className="w-3.5 h-3.5" />
-              <span>設定與驗證 API 金鑰</span>
+              <span>設定 Gemini API 金鑰</span>
             </button>
           </div>
         )}

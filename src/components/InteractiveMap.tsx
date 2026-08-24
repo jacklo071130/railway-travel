@@ -306,49 +306,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             <Layers className="w-3.5 h-3.5" />
             <span>{showStationsLayer ? '顯示全台車站' : '隱藏其他車站'}</span>
           </button>
-
-          {/* Key Setup Instructions trigger */}
-          <button
-            type="button"
-            onClick={() => (onOpenApiKeyModal ? onOpenApiKeyModal() : setShowKeyInstructions(!showKeyInstructions))}
-            className="px-2.5 py-1 rounded-lg bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] text-xs font-semibold border border-[#E5DEAA] flex items-center space-x-1 transition-colors cursor-pointer"
-            title="Google Maps API 設定與驗證"
-          >
-            <Info className="w-3.5 h-3.5 text-[#1A8F82]" />
-            <span>Maps API 金鑰</span>
-          </button>
         </div>
       </div>
-
-      {/* Google Maps Platform Setup Banner (if toggled) */}
-      {showKeyInstructions && (
-        <div className="p-4 bg-[#E5FAF7] border-b border-[#81D8CF]/40 text-xs text-[#0F3A35] space-y-2 z-20 animate-in fade-in duration-150">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-1.5 font-bold text-[#0F3A35]">
-              <Sparkles className="w-4 h-4 text-[#8C7C20]" />
-              <span>Google Maps Platform API Key 啟用說明</span>
-            </div>
-            <button
-              onClick={() => setShowKeyInstructions(false)}
-              className="text-[#546E6A] hover:text-[#122B28] font-bold cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-          <p className="text-[#13695F]">
-            目前本系統已無縫整合 <strong>Google Maps 一鍵精準導航、路線規劃與即時街景</strong>，點擊行程表或地圖上的「Google Maps 導航」按鈕即可在手機或瀏覽器中啟動 Google Maps。
-          </p>
-          <div className="bg-white p-3 rounded-xl border border-[#81D8CF]/40 text-[11px] space-y-1">
-            <p className="font-bold text-[#122B28]">如欲在 AI Studio 預覽視窗內載入 Google Maps 原生圖磚：</p>
-            <ol className="list-decimal list-inside space-y-0.5 text-[#546E6A]">
-              <li>前往 <a href="https://console.cloud.google.com/google/maps-apis/start?utm_campaign=gmp-code-assist-ais" target="_blank" rel="noopener noreferrer" className="text-[#1A8F82] underline font-semibold">Google Cloud Console 取得 Google Maps API Key</a></li>
-              <li>點擊右上角 <strong>Settings (⚙️ 設定) ➔ Secrets (金鑰管理)</strong></li>
-              <li>新增金鑰名稱為 <code>GOOGLE_MAPS_PLATFORM_KEY</code> 並貼上您的 API Key</li>
-              <li>系統將自動套用更新！</li>
-            </ol>
-          </div>
-        </div>
-      )}
 
       {/* Map Canvas with Guaranteed Fixed Height */}
       <div className="relative w-full flex-1" style={{ height: '480px', minHeight: '480px' }}>

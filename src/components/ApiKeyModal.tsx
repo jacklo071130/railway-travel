@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Key,
   Sparkles,
-  MapPin,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -32,10 +31,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   isInitialGated = false,
 }) => {
   const [geminiKey, setGeminiKey] = useState(apiKeys.geminiApiKey || '');
-  const [mapsKey, setMapsKey] = useState(apiKeys.googleMapsApiKey || '');
-
   const [showGeminiKey, setShowGeminiKey] = useState(false);
-  const [showMapsKey, setShowMapsKey] = useState(false);
 
   const [verifyingGemini, setVerifyingGemini] = useState(false);
   const [geminiStatus, setGeminiStatus] = useState<{
@@ -45,16 +41,6 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   }>({
     valid: apiKeys.isGeminiValid,
     message: apiKeys.isGeminiValid ? '金鑰已通過驗證並已暫存' : undefined,
-  });
-
-  const [verifyingMaps, setVerifyingMaps] = useState(false);
-  const [mapsStatus, setMapsStatus] = useState<{
-    valid?: boolean;
-    message?: string;
-    error?: string;
-  }>({
-    valid: apiKeys.isMapsValid,
-    message: apiKeys.isMapsValid ? '金鑰已通過驗證並已暫存' : undefined,
   });
 
   const [systemKeys, setSystemKeys] = useState<{
@@ -80,14 +66,9 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   // Load initial values and check system environment keys
   useEffect(() => {
     setGeminiKey(apiKeys.geminiApiKey || '');
-    setMapsKey(apiKeys.googleMapsApiKey || '');
     setGeminiStatus({
       valid: apiKeys.isGeminiValid,
       message: apiKeys.isGeminiValid ? '金鑰已通過驗證並已暫存' : undefined,
-    });
-    setMapsStatus({
-      valid: apiKeys.isMapsValid,
-      message: apiKeys.isMapsValid ? '金鑰已通過驗證並已暫存' : undefined,
     });
 
     fetch('/api/system-key-status')
@@ -141,68 +122,15 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     }
   };
 
-  // 2. Verify Google Maps API Key
-  const handleVerifyMaps = async () => {
-    const keyToTest = mapsKey.trim();
-    if (!keyToTest) {
-      setMapsStatus({
-        valid: false,
-        error: '請輸入 Google Maps API Key 後再進行驗證',
-      });
-      return;
-    }
-
-    setVerifyingMaps(true);
-    setMapsStatus({});
-
-    try {
-      const response = await fetch('/api/verify-maps-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: keyToTest }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.valid) {
-        setMapsStatus({
-          valid: true,
-          message: data.message || 'Google Maps API 金鑰驗證成功！已暫存於記憶體。',
-        });
-      } else {
-        setMapsStatus({
-          valid: false,
-          error: data.error || 'Google Maps API 金鑰無效，請確認金鑰字串。',
-        });
-      }
-    } catch (err: any) {
-      setMapsStatus({
-        valid: false,
-        error: `驗證連線失敗：${err.message || '請確認網路狀態'}`,
-      });
-    } finally {
-      setVerifyingMaps(false);
-    }
-  };
-
-  // 3. Batch Verify Both
-  const handleVerifyAll = async () => {
-    if (geminiKey.trim()) {
-      handleVerifyGemini();
-    }
-    if (mapsKey.trim()) {
-      handleVerifyMaps();
-    }
-  };
-
-  // 4. Temporary In-Memory Cache and Proceed
+  // Temporary In-Memory Cache and Proceed
   const handleTemporarySaveAndProceed = () => {
     const newConfig: ApiKeysConfig = {
       geminiApiKey: geminiKey.trim(),
-      googleMapsApiKey: mapsKey.trim(),
+      googleMapsApiKey: '',
       isGeminiValid: Boolean(geminiStatus.valid || (geminiKey.trim().length > 10 && !geminiStatus.error)),
-      isMapsValid: Boolean(mapsStatus.valid || (mapsKey.trim().length > 10 && !mapsStatus.error)),
+      isMapsValid: true,
       geminiVerifiedAt: geminiStatus.valid ? new Date().toISOString() : apiKeys.geminiVerifiedAt,
-      mapsVerifiedAt: mapsStatus.valid ? new Date().toISOString() : apiKeys.mapsVerifiedAt,
+      mapsVerifiedAt: new Date().toISOString(),
     };
 
     // Stored in in-memory state only (not saved in localStorage)
@@ -224,7 +152,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     >
       <div
         id="api-key-modal-card"
-        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#E5DEAA] overflow-hidden flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-[#E5DEAA] overflow-hidden flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -236,7 +164,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg sm:text-xl font-bold tracking-wide">
-                  API 金鑰授權與暫存中心
+                  Gemini AI API 金鑰設定
                 </h3>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#81D8CF]/30 text-[#FAF8E7] border border-[#81D8CF]/50 font-semibold">
                   僅記憶體暫存・不存硬碟
@@ -261,14 +189,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto bg-[#FAF8E7]/30">
+        <div className="p-5 sm:p-6 space-y-5 max-h-[75vh] overflow-y-auto bg-[#FAF8E7]/30">
           {/* Security & In-Memory Privacy Notice */}
           <div className="p-3.5 rounded-xl bg-[#E5FAF7] border border-[#81D8CF]/50 flex items-start space-x-3 text-xs text-[#122B28]">
             <ShieldCheck className="w-5 h-5 text-[#1A8F82] shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="font-bold text-[#0F3A35]">金鑰安全暫存與隱私宣告（不永久儲存）</p>
               <p className="text-[#13695F] leading-relaxed">
-                您輸入與驗證的 API 金鑰<strong>僅會在當前工作階段中進行記憶體暫存</strong>，絕不會儲存至瀏覽器本地硬碟（Local Storage）。重新整理或關閉頁面後即自動清除，請安心使用。
+                您輸入與驗證的 Gemini API 金鑰<strong>僅會在當前工作階段中進行記憶體暫存</strong>，絕不會儲存至瀏覽器本地硬碟（Local Storage）。互動地圖已全數採用免金鑰之 OpenStreetMap 與即時定位，無需輸入 Google Maps API Key。
               </p>
             </div>
           </div>
@@ -284,7 +212,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                   <h4 className="text-sm font-bold text-[#122B28] flex items-center gap-2">
                     <span>Gemini AI API Key</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]/30 font-semibold">
-                      必要 (AI 行程與導遊)
+                      必要 (AI 行程與隨身導遊)
                     </span>
                   </h4>
                 </div>
@@ -388,139 +316,10 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Section 2: Google Maps API Key */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF8E7]/60 border border-[#E5DEAA] space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 rounded-lg bg-[#FAF8E7] text-[#8C7C20] border border-[#E5DEAA] flex items-center justify-center font-bold">
-                  <MapPin className="w-4 h-4 text-[#8C7C20]" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-[#122B28] flex items-center gap-2">
-                    <span>Google Maps API Key</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FAF8E7] text-[#665A15] border border-[#E5DEAA] font-semibold">
-                      選填 (地圖圖磚與導航)
-                    </span>
-                  </h4>
-                </div>
-              </div>
-
-              {/* Status Pill */}
-              <div>
-                {mapsStatus.valid === true ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#1A8F82]" />
-                    驗證成功 (已暫存)
-                  </span>
-                ) : mapsStatus.valid === false ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
-                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                    驗證失敗
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-[#FAF8E7] text-[#546E6A] border border-[#E5DEAA]">
-                    待驗證
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Input Row */}
-            <div className="space-y-2">
-              <div className="relative flex items-center">
-                <input
-                  id="input-google-maps-api-key"
-                  type={showMapsKey ? 'text' : 'password'}
-                  value={mapsKey}
-                  onChange={(e) => {
-                    setMapsKey(e.target.value);
-                    setMapsStatus({});
-                  }}
-                  placeholder="AIzaSy... (貼上 Google Maps API Key，若無可留空)"
-                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl border border-[#E5DEAA] focus:border-[#1A8F82] focus:ring-2 focus:ring-[#81D8CF]/30 outline-none text-sm font-mono transition-all text-[#122B28] bg-white placeholder-[#78928E]"
-                />
-
-                <div className="absolute right-2 flex items-center space-x-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowMapsKey(!showMapsKey)}
-                    className="p-1.5 text-[#546E6A] hover:text-[#122B28] rounded-lg hover:bg-[#FAF8E7] transition-colors cursor-pointer"
-                    title={showMapsKey ? '隱藏金鑰' : '顯示金鑰'}
-                  >
-                    {showMapsKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-
-                  <button
-                    id="btn-verify-maps-key"
-                    type="button"
-                    onClick={handleVerifyMaps}
-                    disabled={verifyingMaps || !mapsKey.trim()}
-                    className="px-3 py-1.5 rounded-lg bg-[#1A8F82] hover:bg-[#13695F] disabled:bg-[#E5DEAA] disabled:text-[#78928E] text-white text-xs font-bold shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
-                  >
-                    {verifyingMaps ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>驗證中</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>驗證金鑰</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Feedback messages */}
-              {mapsStatus.message && (
-                <p className="text-xs text-[#13695F] font-medium flex items-center gap-1 mt-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#1A8F82]" />
-                  {mapsStatus.message}
-                </p>
-              )}
-              {mapsStatus.error && (
-                <p className="text-xs text-rose-600 font-medium flex items-start gap-1 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>{mapsStatus.error}</span>
-                </p>
-              )}
-
-              {/* Helper Links */}
-              <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-[#546E6A]">
-                  用於載入 Google Maps 原生地圖圖磚與路線導航。
-                </span>
-                <a
-                  href="https://console.cloud.google.com/google/maps-apis/credentials"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#13695F] hover:text-[#0F3A35] font-semibold inline-flex items-center gap-1 hover:underline shrink-0"
-                >
-                  <span>Google Cloud 憑證中心</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-6 bg-[#FAF8E7] border-t border-[#E5DEAA] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center space-x-2">
-            <button
-              id="btn-verify-all-keys"
-              type="button"
-              onClick={handleVerifyAll}
-              disabled={verifyingGemini || verifyingMaps || (!geminiKey.trim() && !mapsKey.trim())}
-              className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F8F5D6] border border-[#E5DEAA] disabled:opacity-50 text-[#122B28] text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#1A8F82] ${verifyingGemini || verifyingMaps ? 'animate-spin' : ''}`} />
-              <span>一鍵驗證全部</span>
-            </button>
-          </div>
-
+        <div className="p-4 sm:p-6 bg-[#FAF8E7] border-t border-[#E5DEAA] flex flex-col sm:flex-row items-center justify-end gap-3">
           <div className="flex items-center space-x-2 w-full sm:w-auto">
             {!isInitialGated && (
               <button
