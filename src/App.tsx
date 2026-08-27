@@ -4,14 +4,15 @@ import { StationSelector } from './components/StationSelector';
 import { TravelPreferencesModal } from './components/TravelPreferencesModal';
 import { ItineraryView } from './components/ItineraryView';
 import { InteractiveMap } from './components/InteractiveMap';
-import { NearbyExplorer } from './components/NearbyExplorer';
+import { NearbyExplorer, NearbyItem } from './components/NearbyExplorer';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { SavedTripsModal } from './components/SavedTripsModal';
 import { TRAQuickInfo } from './components/TRAQuickInfo';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { TRAStation, TravelPreferences, DayItinerary, ItineraryStop, ApiKeysConfig } from './types';
 import { TAIWAN_TRA_STATIONS, findStationById } from './data/taiwanStations';
-import { Train, Sparkles, MapPin, Compass, AlertCircle, RefreshCw, Key, ShieldCheck } from 'lucide-react';
+import { createItineraryWithSelectedItems } from './utils/itineraryBuilder';
+import { Train, Sparkles, MapPin, Compass, AlertCircle, RefreshCw, Key, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 // In-memory session temporary state for API Keys (do not persist to localStorage)
 const STORAGE_KEY_SAVED_TRIPS = 'TRA_TRAVEL_SAVED_TRIPS_V1';
@@ -84,6 +85,7 @@ export default function App() {
     }
   });
 
+  const [addedToastMessage, setAddedToastMessage] = useState<string | null>(null);
   const itineraryResultRef = useRef<HTMLDivElement>(null);
 
   // Auto save trips to local storage (API keys are kept strictly temporary in memory only)
@@ -608,6 +610,122 @@ export default function App() {
     setSavedTrips((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Handle adding selected items from Station Explorer into the Itinerary
+  const handleAddExplorerItemsToItinerary = (itemsToAdd: NearbyItem[], targetStation: TRAStation) => {
+    if (!itemsToAdd || itemsToAdd.length === 0) return;
+
+    // Ensure destination station is set to target station
+    setDestinationStation(targetStation);
+
+    // Update preferences custom notes
+    const itemNames = itemsToAdd.map((i) => i.name);
+    const updatedNotes = preferences.customNotes
+      ? `${preferences.customNotes}，指定包含：${itemNames.join('、')}`
+      : `指定包含：${itemNames.join('、')}`;
+
+    setPreferences((prev) => ({
+      ...prev,
+      customNotes: updatedNotes,
+    }));
+
+    if (itinerary && itinerary.destinationStation.id === targetStation.id) {
+      const existingStopNames = new Set(itinerary.stops.map((s) => s.placeName.trim()));
+      const newStops: ItineraryStop[] = [];
+
+      itemsToAdd.forEach((item, idx) => {
+        if (!existingStopNames.has(item.name.trim())) {
+          const isFood = item.category === 'food';
+          const isSouvenir = item.category === 'souvenir';
+          const angle = (idx + itinerary.stops.length) * 1.25;
+          const radius = 0.003 + (idx % 3) * 0.002;
+          const lat = targetStation.lat + Math.sin(angle) * radius;
+          const lng = targetStation.lng + Math.cos(angle) * radius;
+
+          newStops.push({
+            id: `stop-added-${Date.now()}-${idx}`,
+            timeSlot: `${11 + (idx * 2)}:00 - ${12 + (idx * 2)}:00`,
+            placeName: item.name,
+            category: isFood ? 'food' : isSouvenir ? 'shopping' : 'spot',
+            highlight: `${item.categoryName}・老饕熱門推薦 (${item.rating.toFixed(1)}★)`,
+            description: item.description,
+            address: `${targetStation.county}${targetStation.name}站周邊 (${item.distance})`,
+            lat,
+            lng,
+            durationMinutes: isFood ? 50 : isSouvenir ? 40 : 60,
+            transportFromPrevious: {
+              mode: 'walk',
+              durationText: item.distance,
+              details: `由上一站點步行或騎乘 YouBike 前往 (${item.distance})`,
+            },
+            recommendedItems: [item.name],
+            tips: `${item.name}為在地推薦，建議依當日人潮彈性安排時間。`,
+            estimatedCostNtd: isFood ? 120 : isSouvenir ? 200 : 0,
+          });
+        }
+      });
+
+      // Recalculate time slots across all stops smoothly
+      const baseStops = itinerary.stops.length > 1 
+        ? [...itinerary.stops.slice(0, itinerary.stops.length - 1), ...newStops, itinerary.stops[itinerary.stops.length - 1]]
+        : [...itinerary.stops, ...newStops];
+
+      const finalStops = baseStops.map((stop, index) => {
+        const startHour = 9 + Math.floor(index * 1.4);
+        const startMin = (index * 45) % 60;
+        const endMin = (startMin + stop.durationMinutes) % 60;
+        const endHour = startHour + Math.floor((startMin + stop.durationMinutes) / 60);
+
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return {
+          ...stop,
+          timeSlot: `${pad(startHour)}:${pad(startMin)} - ${pad(endHour)}:${pad(endMin)}`,
+        };
+      });
+
+      const updatedMustEat = [
+        ...itinerary.localSpecialties.mustEat,
+        ...itemsToAdd.filter((i) => i.category === 'food' && !itinerary.localSpecialties.mustEat.includes(i.name)).map((i) => i.name),
+      ];
+
+      const updatedSouvenirs = [
+        ...itinerary.localSpecialties.souvenirs,
+        ...itemsToAdd.filter((i) => i.category === 'souvenir' && !itinerary.localSpecialties.souvenirs.includes(i.name)).map((i) => i.name),
+      ];
+
+      setItinerary({
+        ...itinerary,
+        stops: finalStops,
+        localSpecialties: {
+          ...itinerary.localSpecialties,
+          mustEat: updatedMustEat,
+          souvenirs: updatedSouvenirs,
+        },
+        estimatedTotalBudget: itinerary.estimatedTotalBudget + newStops.length * 120,
+      });
+    } else {
+      // Build a fresh customized itinerary incorporating the selected items
+      const newItinerary = createItineraryWithSelectedItems(
+        originStation,
+        targetStation,
+        travelDate,
+        itemsToAdd,
+        preferences
+      );
+      setItinerary(newItinerary);
+    }
+
+    setAddedToastMessage(`🎉 已成功將 ${itemsToAdd.length} 個美食景點加入【${targetStation.name}】一日遊行程規劃！`);
+    setActiveTab('planner');
+
+    setTimeout(() => {
+      setAddedToastMessage(null);
+    }, 5000);
+
+    setTimeout(() => {
+      itineraryResultRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  };
+
   const isCurrentTripSaved = Boolean(
     itinerary && savedTrips.some((t) => t.id === itinerary.id)
   );
@@ -630,6 +748,28 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Added Items Success Toast Banner */}
+        {addedToastMessage && (
+          <div className="p-4 bg-gradient-to-r from-[#1A8F82] to-[#13695F] text-white rounded-2xl shadow-lg border border-[#81D8CF]/40 flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-white/20 text-[#81D8CF] border border-white/30">
+                <CheckCircle2 className="w-5 h-5 text-[#81D8CF]" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-white">{addedToastMessage}</p>
+                <p className="text-xs text-[#FAF8E7]/80 mt-0.5">
+                  已自動更新行程時間軸、景點停留與地圖路線。
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAddedToastMessage(null)}
+              className="text-[#FAF8E7] hover:text-white text-xs font-bold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {/* API Key Status Notice Bar (if unconfigured) */}
         {!apiKeys.isGeminiValid && (
           <div className="p-3.5 bg-[#F8F5D6] rounded-2xl border-2 border-[#81D8CF] flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
@@ -803,6 +943,16 @@ export default function App() {
               setDestinationStation(st);
               setActiveTab('planner');
             }}
+            onAddItemsToItinerary={handleAddExplorerItemsToItinerary}
+            currentItineraryItemNames={
+              itinerary && itinerary.destinationStation.id === destinationStation.id
+                ? [
+                    ...itinerary.stops.map((s) => s.placeName),
+                    ...itinerary.localSpecialties.mustEat,
+                    ...itinerary.localSpecialties.souvenirs,
+                  ]
+                : []
+            }
           />
         )}
 
