@@ -462,12 +462,12 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
 
           <a
             id="btn-tra-booking-link"
-            href="https://www.railway.gov.tw/tra-tip-web/tip"
+            href="https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip112/gobytime"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#1A8F82] hover:bg-[#13695F] text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
           >
-            <span>台鐵官網線上訂票 / 時刻表</span>
+            <span>台鐵官方即時時刻表查詢 (gobytime)</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>

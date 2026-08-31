@@ -2,12 +2,41 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { DayItinerary } from '../types';
 
-export async function exportElementToPdf(element: HTMLElement, itinerary: DayItinerary): Promise<void> {
-  const cleanTitle = itinerary.title.replace(/[\\/:*?"<>|]/g, '_');
-  const filename = `${cleanTitle}_AI台鐵一日遊行程表_${itinerary.travelDate || '行程'}.pdf`;
+/**
+ * Triggers direct browser download of a generated PDF file
+ */
+function downloadPdfBlob(pdf: jsPDF, filename: string): void {
+  try {
+    const pdfBlob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      if (document.body.contains(link)) {
+        document.body.removeChild(link);
+      }
+      URL.revokeObjectURL(blobUrl);
+    }, 2000);
+  } catch (err) {
+    console.warn('Blob URL download failed, falling back to pdf.save():', err);
+    pdf.save(filename);
+  }
+}
 
-  // Wait a small tick to ensure any dynamic rendering or fonts are settled
-  await new Promise((resolve) => setTimeout(resolve, 80));
+export async function exportElementToPdf(element: HTMLElement, itinerary: DayItinerary): Promise<void> {
+  const cleanTitle = (itinerary.title || '台鐵一日遊')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .trim();
+  const dateStr = itinerary.travelDate || '行程';
+  const filename = `${cleanTitle}_台鐵一日遊行程表_${dateStr}.pdf`;
+
+  // Wait a small tick to ensure any fonts or dynamic images are settled
+  await new Promise((resolve) => setTimeout(resolve, 120));
 
   // Find all explicitly formatted A4 pages inside the container
   const pageNodes = Array.from(element.querySelectorAll<HTMLElement>('.pdf-page'));
@@ -34,6 +63,13 @@ export async function exportElementToPdf(element: HTMLElement, itinerary: DayIti
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 794,
+        onclone: (clonedDoc) => {
+          // Ensure all cloned elements are visible for rendering
+          const clonedPage = clonedDoc.querySelector('.pdf-page');
+          if (clonedPage) {
+            (clonedPage as HTMLElement).style.visibility = 'visible';
+          }
+        },
       });
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -46,7 +82,7 @@ export async function exportElementToPdf(element: HTMLElement, itinerary: DayIti
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
     }
   } else {
-    // Fallback: If no .pdf-page markers, render element
+    // Fallback: If no .pdf-page markers, render entire element
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -110,23 +146,7 @@ export async function exportElementToPdf(element: HTMLElement, itinerary: DayIti
     }
   }
 
-  // Generate Blob and trigger direct browser file download via standard <a> element
-  try {
-    const pdfBlob = pdf.output('blob');
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    const downloadLink = document.createElement('a');
-    downloadLink.href = blobUrl;
-    downloadLink.download = filename;
-    downloadLink.style.display = 'none';
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    setTimeout(() => {
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(blobUrl);
-    }, 1500);
-  } catch {
-    // Fallback directly to pdf.save()
-    pdf.save(filename);
-  }
+  // Directly trigger browser download of the .pdf file
+  downloadPdfBlob(pdf, filename);
 }
 

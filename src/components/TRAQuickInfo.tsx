@@ -22,13 +22,13 @@ export const TRAQuickInfo: React.FC = () => {
         </div>
 
         <a
-          href="https://www.railway.gov.tw/tra-tip-web/tip"
+          href="https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip112/gobytime"
           target="_blank"
           rel="noopener noreferrer"
           className="px-5 py-3 rounded-xl bg-[#5EC9BD] hover:bg-[#81D8CF] text-[#0F3A35] text-xs sm:text-sm font-bold shadow-lg flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
         >
           <Train className="w-4 h-4" />
-          <span>進入台鐵官方網站時刻表系統</span>
+          <span>台鐵官方即時時刻表查詢 (gobytime)</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
