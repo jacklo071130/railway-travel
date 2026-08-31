@@ -12,7 +12,8 @@ import { ApiKeyModal } from './components/ApiKeyModal';
 import { TRAStation, TravelPreferences, DayItinerary, ItineraryStop, ApiKeysConfig } from './types';
 import { TAIWAN_TRA_STATIONS, findStationById } from './data/taiwanStations';
 import { createItineraryWithSelectedItems } from './utils/itineraryBuilder';
-import { Train, Sparkles, MapPin, Compass, AlertCircle, RefreshCw, Key, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { optimizeItineraryStops, analyzePlaceProfile } from './utils/itineraryOptimizer';
+import { Train, Sparkles, MapPin, Compass, AlertCircle, RefreshCw, Key, ShieldCheck, CheckCircle2, Route } from 'lucide-react';
 
 // In-memory session temporary state for API Keys (do not persist to localStorage)
 const STORAGE_KEY_SAVED_TRIPS = 'TRA_TRAVEL_SAVED_TRIPS_V1';
@@ -610,6 +611,170 @@ export default function App() {
     setSavedTrips((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // State for AI Itinerary Re-optimization loading
+  const [isOptimizingItinerary, setIsOptimizingItinerary] = useState(false);
+
+  // Manual Trigger: Re-optimize current itinerary stops by optimal path and business hours
+  const handleOptimizeCurrentItinerary = async () => {
+    if (!itinerary || !itinerary.stops || itinerary.stops.length <= 1) return;
+
+    setIsOptimizingItinerary(true);
+    const targetStation = itinerary.destinationStation;
+
+    // Filter only activity stops (excluding station arrival and return ends)
+    const rawActivityStops = itinerary.stops.filter((s) => {
+      const isArr = s.id.startsWith('stop-arrival') || s.placeName.includes('出站') || s.placeName.includes('抵達');
+      const isRet = s.id.startsWith('stop-return') || s.placeName.includes('返程') || s.placeName.includes('搭乘自強');
+      return !isArr && !isRet && s.category !== 'transport';
+    });
+
+    try {
+      // 1. Try AI-powered re-optimization if Gemini API key exists
+      if (apiKeys.geminiApiKey) {
+        const response = await fetch('/api/optimize-itinerary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-gemini-api-key': apiKeys.geminiApiKey,
+          },
+          body: JSON.stringify({
+            destinationStation: targetStation,
+            stops: rawActivityStops,
+            preferences,
+            travelDate,
+            geminiApiKey: apiKeys.geminiApiKey,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.stops && data.stops.length > 0) {
+            setItinerary((prev) => (prev ? { ...prev, stops: data.stops } : prev));
+            setAddedToastMessage(`✨ AI 智慧最佳化完成！已依各景點店家真實營業時間與最短步行/YouBike動線重新編排。`);
+            setTimeout(() => setAddedToastMessage(null), 4500);
+            setIsOptimizingItinerary(false);
+            return;
+          }
+        }
+      }
+
+      // 2. High-precision Algorithmic Nearest-Neighbor & Business-Hour Optimization
+      const optimizedStops = optimizeItineraryStops(targetStation, rawActivityStops, '09:30');
+      setItinerary((prev) => (prev ? { ...prev, stops: optimizedStops } : prev));
+      setAddedToastMessage(`🧭 最佳動線編排完成！已按【晨間戶外 ➔ 午餐正餐 ➔ 午後休閒 ➔ 傍晚伴手禮 ➔ 晚間夜市】與地理最短路徑重排。`);
+      setTimeout(() => setAddedToastMessage(null), 4500);
+    } catch (e) {
+      console.error('Failed to optimize itinerary:', e);
+      const optimizedStops = optimizeItineraryStops(targetStation, rawActivityStops, '09:30');
+      setItinerary((prev) => (prev ? { ...prev, stops: optimizedStops } : prev));
+      setAddedToastMessage(`🧭 已依地理最短路徑與營業時間區間完成行程重新排序。`);
+      setTimeout(() => setAddedToastMessage(null), 4000);
+    } finally {
+      setIsOptimizingItinerary(false);
+    }
+  };
+
+  // Remove a stop from the current itinerary and re-optimize order
+  const handleRemoveStop = (stopId: string) => {
+    if (!itinerary) return;
+    const targetStop = itinerary.stops.find((s) => s.id === stopId);
+    if (!targetStop) return;
+
+    if (itinerary.stops.length <= 2) {
+      setAddedToastMessage('⚠️ 一日行程中至少需保留一個景點或美食項目。');
+      setTimeout(() => setAddedToastMessage(null), 3000);
+      return;
+    }
+
+    // Filter remaining activity stops
+    const remainingActivityStops = itinerary.stops.filter((s) => {
+      if (s.id === stopId) return false;
+      const isArr = s.id.startsWith('stop-arrival') || s.placeName.includes('出站') || s.placeName.includes('抵達');
+      const isRet = s.id.startsWith('stop-return') || s.placeName.includes('返程') || s.placeName.includes('搭乘自強');
+      return !isArr && !isRet && s.category !== 'transport';
+    });
+
+    // Re-run optimization on remaining stops
+    const finalStops = optimizeItineraryStops(
+      itinerary.destinationStation,
+      remainingActivityStops,
+      '09:30'
+    );
+
+    const costDiff = targetStop.estimatedCostNtd || 100;
+    const updatedBudget = Math.max(200, itinerary.estimatedTotalBudget - costDiff);
+
+    setItinerary({
+      ...itinerary,
+      stops: finalStops,
+      estimatedTotalBudget: updatedBudget,
+    });
+
+    setAddedToastMessage(`🗑️ 已成功移除【${targetStop.placeName}】${targetStop.category === 'food' ? '美食' : '景點'}，並自動重新銜接最佳動線與時間表。`);
+    setTimeout(() => {
+      setAddedToastMessage(null);
+    }, 4000);
+  };
+
+  // Remove a specific recommended tag inside a stop
+  const handleRemoveRecommendedItem = (stopIndex: number, itemIndex: number) => {
+    if (!itinerary || !itinerary.stops[stopIndex]) return;
+    const stop = itinerary.stops[stopIndex];
+    const currentItems = stop.recommendedItems || [];
+    const removedItem = currentItems[itemIndex];
+    const updatedItems = currentItems.filter((_, idx) => idx !== itemIndex);
+
+    const updatedStops = itinerary.stops.map((s, idx) => {
+      if (idx === stopIndex) {
+        return {
+          ...s,
+          recommendedItems: updatedItems,
+        };
+      }
+      return s;
+    });
+
+    setItinerary({
+      ...itinerary,
+      stops: updatedStops,
+    });
+
+    if (removedItem) {
+      setAddedToastMessage(`🗑️ 已自【${stop.placeName}】移除推薦標籤「${removedItem}」。`);
+      setTimeout(() => setAddedToastMessage(null), 3000);
+    }
+  };
+
+  // Remove a food item from mustEat list
+  const handleRemoveMustEatFood = (foodName: string) => {
+    if (!itinerary) return;
+    const updatedMustEat = itinerary.localSpecialties.mustEat.filter((f) => f !== foodName);
+    setItinerary({
+      ...itinerary,
+      localSpecialties: {
+        ...itinerary.localSpecialties,
+        mustEat: updatedMustEat,
+      },
+    });
+    setAddedToastMessage(`🗑️ 已將美食【${foodName}】自在地老饕推薦清單中移除。`);
+    setTimeout(() => setAddedToastMessage(null), 3000);
+  };
+
+  // Remove a souvenir from souvenirs list
+  const handleRemoveSouvenir = (souvenirName: string) => {
+    if (!itinerary) return;
+    const updatedSouvenirs = itinerary.localSpecialties.souvenirs.filter((s) => s !== souvenirName);
+    setItinerary({
+      ...itinerary,
+      localSpecialties: {
+        ...itinerary.localSpecialties,
+        souvenirs: updatedSouvenirs,
+      },
+    });
+    setAddedToastMessage(`🗑️ 已將伴手禮【${souvenirName}】自推薦清單中移除。`);
+    setTimeout(() => setAddedToastMessage(null), 3000);
+  };
+
   // Handle adding selected items from Station Explorer into the Itinerary
   const handleAddExplorerItemsToItinerary = (itemsToAdd: NearbyItem[], targetStation: TRAStation) => {
     if (!itemsToAdd || itemsToAdd.length === 0) return;
@@ -629,58 +794,55 @@ export default function App() {
     }));
 
     if (itinerary && itinerary.destinationStation.id === targetStation.id) {
-      const existingStopNames = new Set(itinerary.stops.map((s) => s.placeName.trim()));
-      const newStops: ItineraryStop[] = [];
+      // 1. Gather all existing activity stops (non-transport)
+      const existingActivityStops = itinerary.stops.filter((s) => {
+        const isArr = s.id.startsWith('stop-arrival') || s.placeName.includes('出站') || s.placeName.includes('抵達');
+        const isRet = s.id.startsWith('stop-return') || s.placeName.includes('返程') || s.placeName.includes('搭乘自強');
+        return !isArr && !isRet && s.category !== 'transport';
+      });
 
+      const existingNames = new Set(existingActivityStops.map((s) => s.placeName.trim()));
+
+      // 2. Convert newly selected items into ItineraryStop objects
+      const newConvertedStops: ItineraryStop[] = [];
       itemsToAdd.forEach((item, idx) => {
-        if (!existingStopNames.has(item.name.trim())) {
+        if (!existingNames.has(item.name.trim())) {
           const isFood = item.category === 'food';
           const isSouvenir = item.category === 'souvenir';
-          const angle = (idx + itinerary.stops.length) * 1.25;
+          const angle = (idx + existingActivityStops.length) * 1.3;
           const radius = 0.003 + (idx % 3) * 0.002;
           const lat = targetStation.lat + Math.sin(angle) * radius;
           const lng = targetStation.lng + Math.cos(angle) * radius;
 
-          newStops.push({
-            id: `stop-added-${Date.now()}-${idx}`,
-            timeSlot: `${11 + (idx * 2)}:00 - ${12 + (idx * 2)}:00`,
+          newConvertedStops.push({
+            id: `stop-user-added-${Date.now()}-${idx}`,
+            timeSlot: '12:00 - 13:00',
             placeName: item.name,
+            placeNameEn: item.name,
             category: isFood ? 'food' : isSouvenir ? 'shopping' : 'spot',
             highlight: `${item.categoryName}・老饕熱門推薦 (${item.rating.toFixed(1)}★)`,
             description: item.description,
             address: `${targetStation.county}${targetStation.name}站周邊 (${item.distance})`,
             lat,
             lng,
-            durationMinutes: isFood ? 50 : isSouvenir ? 40 : 60,
+            durationMinutes: isFood ? 50 : isSouvenir ? 35 : 60,
             transportFromPrevious: {
               mode: 'walk',
               durationText: item.distance,
-              details: `由上一站點步行或騎乘 YouBike 前往 (${item.distance})`,
+              details: `由上一站點前往 (${item.distance})`,
             },
             recommendedItems: [item.name],
-            tips: `${item.name}為在地推薦，建議依當日人潮彈性安排時間。`,
-            estimatedCostNtd: isFood ? 120 : isSouvenir ? 200 : 0,
+            tips: `${item.name}為在地推薦名店，營業時間與人潮眾多時建議提早入座。`,
+            estimatedCostNtd: isFood ? 150 : isSouvenir ? 250 : 50,
           });
         }
       });
 
-      // Recalculate time slots across all stops smoothly
-      const baseStops = itinerary.stops.length > 1 
-        ? [...itinerary.stops.slice(0, itinerary.stops.length - 1), ...newStops, itinerary.stops[itinerary.stops.length - 1]]
-        : [...itinerary.stops, ...newStops];
+      // 3. Combined raw stops to optimize
+      const combinedRawStops = [...existingActivityStops, ...newConvertedStops];
 
-      const finalStops = baseStops.map((stop, index) => {
-        const startHour = 9 + Math.floor(index * 1.4);
-        const startMin = (index * 45) % 60;
-        const endMin = (startMin + stop.durationMinutes) % 60;
-        const endHour = startHour + Math.floor((startMin + stop.durationMinutes) / 60);
-
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        return {
-          ...stop,
-          timeSlot: `${pad(startHour)}:${pad(startMin)} - ${pad(endHour)}:${pad(endMin)}`,
-        };
-      });
+      // 4. Run Smart Optimization Algorithm (Nearest-Neighbor + Business Hours Windows)
+      const optimizedStops = optimizeItineraryStops(targetStation, combinedRawStops, '09:30');
 
       const updatedMustEat = [
         ...itinerary.localSpecialties.mustEat,
@@ -694,16 +856,16 @@ export default function App() {
 
       setItinerary({
         ...itinerary,
-        stops: finalStops,
+        stops: optimizedStops,
         localSpecialties: {
           ...itinerary.localSpecialties,
           mustEat: updatedMustEat,
           souvenirs: updatedSouvenirs,
         },
-        estimatedTotalBudget: itinerary.estimatedTotalBudget + newStops.length * 120,
+        estimatedTotalBudget: itinerary.estimatedTotalBudget + newConvertedStops.length * 150,
       });
     } else {
-      // Build a fresh customized itinerary incorporating the selected items
+      // Build a fresh customized itinerary incorporating the selected items via optimized builder
       const newItinerary = createItineraryWithSelectedItems(
         originStation,
         targetStation,
@@ -714,12 +876,12 @@ export default function App() {
       setItinerary(newItinerary);
     }
 
-    setAddedToastMessage(`🎉 已成功將 ${itemsToAdd.length} 個美食景點加入【${targetStation.name}】一日遊行程規劃！`);
+    setAddedToastMessage(`🧭 已加入【${itemNames.join('、')}】，並已依【營業時間】與【最短路徑不走回頭路】智慧重排全日行程順序！`);
     setActiveTab('planner');
 
     setTimeout(() => {
       setAddedToastMessage(null);
-    }, 5000);
+    }, 5500);
 
     setTimeout(() => {
       itineraryResultRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -890,6 +1052,12 @@ export default function App() {
                     setSelectedStopOnMap(stop);
                     window.scrollTo({ top: 320, behavior: 'smooth' });
                   }}
+                  onRemoveStop={handleRemoveStop}
+                  onRemoveRecommendedItem={handleRemoveRecommendedItem}
+                  onRemoveMustEatFood={handleRemoveMustEatFood}
+                  onRemoveSouvenir={handleRemoveSouvenir}
+                  onReorderOptimalRoute={handleOptimizeCurrentItinerary}
+                  isOptimizing={isOptimizingItinerary}
                 />
               </div>
             )}

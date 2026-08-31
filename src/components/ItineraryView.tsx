@@ -28,9 +28,12 @@ import {
   ArrowDown,
   FileDown,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Trash2,
+  X
 } from 'lucide-react';
 import { DayItinerary, ItineraryStop, TrainTripOption } from '../types';
+import { analyzePlaceProfile } from '../utils/itineraryOptimizer';
 import confetti from 'canvas-confetti';
 import { PdfExportModal } from './PdfExportModal';
 import { PdfPrintableSheet } from './PdfPrintableSheet';
@@ -41,6 +44,12 @@ interface ItineraryViewProps {
   onSaveTrip: (itinerary: DayItinerary) => void;
   isSaved: boolean;
   onSelectStopOnMap?: (stop: ItineraryStop) => void;
+  onRemoveStop?: (stopId: string) => void;
+  onRemoveRecommendedItem?: (stopIndex: number, itemIndex: number) => void;
+  onRemoveMustEatFood?: (foodName: string) => void;
+  onRemoveSouvenir?: (souvenirName: string) => void;
+  onReorderOptimalRoute?: () => void;
+  isOptimizing?: boolean;
 }
 
 export const ItineraryView: React.FC<ItineraryViewProps> = ({
@@ -48,6 +57,12 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   onSaveTrip,
   isSaved,
   onSelectStopOnMap,
+  onRemoveStop,
+  onRemoveRecommendedItem,
+  onRemoveMustEatFood,
+  onRemoveSouvenir,
+  onReorderOptimalRoute,
+  isOptimizing = false,
 }) => {
   const [copied, setCopied] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
@@ -914,6 +929,50 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
 
       {/* Step-by-Step Itinerary Timeline */}
       <div className="space-y-4">
+        {/* Smart Route & Business Hours Optimization Banner */}
+        <div className="bg-gradient-to-r from-[#E5FAF7] via-[#FAF8E7] to-white border border-[#81D8CF]/60 rounded-2xl p-4 sm:p-4.5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start space-x-3">
+            <div className="p-2 rounded-xl bg-[#1A8F82] text-white shadow-sm flex-shrink-0 mt-0.5">
+              <Route className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h4 className="text-sm font-bold text-[#122B28]">
+                  AI 最佳路徑與營業時間動態編排
+                </h4>
+                <span className="px-2 py-0.5 rounded-full bg-[#1A8F82]/15 text-[#13695F] text-[11px] font-bold border border-[#81D8CF]/40">
+                  ✨ 智慧動線已啟用
+                </span>
+              </div>
+              <p className="text-xs text-[#546E6A] mt-1 leading-relaxed">
+                全日行程已自動依各店家真實營業時間（如夜市傍晚開、正餐午間吃、伴手禮返程前買）與最短地理動線（不走回頭路）智慧排序。
+              </p>
+            </div>
+          </div>
+
+          {onReorderOptimalRoute && (
+            <button
+              id="btn-reorder-optimal-route"
+              type="button"
+              onClick={onReorderOptimalRoute}
+              disabled={isOptimizing}
+              className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-[#1A8F82] hover:bg-[#13695F] text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50 active:scale-95 flex-shrink-0"
+            >
+              {isOptimizing ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>智慧運算中...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-[#FAF8E7]" />
+                  <span>一鍵重新最佳化排程</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-[#122B28] flex items-center gap-2">
             <Clock className="w-5 h-5 text-[#1A8F82]" />
@@ -927,6 +986,9 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
         <div className="relative border-l-2 border-[#81D8CF] ml-4 sm:ml-6 pl-4 sm:pl-6 space-y-6">
           {itinerary.stops.map((stop, index) => {
             const badge = getCategoryBadge(stop.category);
+            const profile = analyzePlaceProfile(stop.placeName, stop.category, stop.description);
+            const isStationStop = stop.id.startsWith('stop-arrival') || stop.id.startsWith('stop-return') || stop.category === 'transport';
+
             return (
               <div
                 key={stop.id || index}
@@ -951,7 +1013,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 {/* Stop Header */}
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                   <div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                       <span className="text-xs font-bold text-[#13695F] bg-[#E5FAF7] px-2 py-0.5 rounded-md border border-[#81D8CF]/40">
                         {stop.timeSlot}
                       </span>
@@ -959,6 +1021,11 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                         {badge.icon}
                         <span>{badge.label}</span>
                       </span>
+                      {!isStationStop && (
+                        <span className="text-xs font-medium text-[#1A8F82] bg-[#FAF8E7] px-2 py-0.5 rounded-md border border-[#E5DEAA] flex items-center gap-1">
+                          {profile.bestVisitingText.split(' ')[0]} {profile.bestVisitingText.split(' ')[1] || ''}
+                        </span>
+                      )}
                       <span className="text-xs text-[#78928E]">
                         (停留約 {stop.durationMinutes} 分鐘)
                       </span>
@@ -972,25 +1039,53 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                     </p>
                   </div>
 
-                  {/* Map trigger */}
-                  {onSelectStopOnMap && (
-                    <div className="flex items-center space-x-2">
+                  {/* Actions: Map & Remove buttons */}
+                  <div className="flex items-center space-x-1.5 sm:space-x-2">
+                    {onSelectStopOnMap && (
                       <button
+                        id={`btn-map-stop-${index}`}
+                        type="button"
                         onClick={() => onSelectStopOnMap(stop)}
-                        className="px-2.5 py-1.5 rounded-lg bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] text-xs font-semibold flex items-center space-x-1 border border-[#E5DEAA] transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-xl bg-[#FAF8E7] hover:bg-[#F8F5D6] text-[#122B28] text-xs font-semibold flex items-center space-x-1 border border-[#E5DEAA] transition-colors cursor-pointer active:scale-95"
                         title="在地圖中檢視位置"
                       >
                         <MapPin className="w-3.5 h-3.5 text-[#1A8F82]" />
                         <span>地圖查看</span>
                       </button>
-                    </div>
-                  )}
+                    )}
+
+                    {onRemoveStop && (
+                      <button
+                        id={`btn-remove-stop-${index}`}
+                        type="button"
+                        onClick={() => onRemoveStop(stop.id)}
+                        className="px-2.5 py-1.5 rounded-xl bg-[#FAF8E7] hover:bg-rose-50 text-[#546E6A] hover:text-rose-700 text-xs font-semibold flex items-center space-x-1 border border-[#E5DEAA] hover:border-rose-300 transition-all cursor-pointer group/del active:scale-95"
+                        title={stop.category === 'food' ? `移除此美食行程（${stop.placeName}）` : `移除此景點行程（${stop.placeName}）`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-[#78928E] group-hover/del:text-rose-600 transition-colors" />
+                        <span>{stop.category === 'food' ? '移除美食' : '移除行程'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Description */}
                 <p className="text-sm text-[#4E6864] leading-relaxed mb-3">
                   {stop.description}
                 </p>
+
+                {/* Business Hours & Optimal Time tag for activity places */}
+                {!isStationStop && profile.businessHoursText && (
+                  <div className="flex flex-wrap items-center gap-2 mb-3 bg-[#FAF8E7]/60 border border-[#E5DEAA]/80 px-3 py-1.5 rounded-xl text-xs">
+                    <span className="font-bold text-[#13695F] flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-[#1A8F82]" />
+                      營業時間參考：
+                    </span>
+                    <span className="text-[#122B28]">{profile.businessHoursText}</span>
+                    <span className="text-[#81D8CF] hidden sm:inline">•</span>
+                    <span className="text-[#665A15] font-medium">{profile.bestVisitingText}</span>
+                  </div>
+                )}
 
                 {/* Recommended Items & Dishes */}
                 {stop.recommendedItems && stop.recommendedItems.length > 0 && (
@@ -1002,9 +1097,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                       {stop.recommendedItems.map((item, i) => (
                         <span
                           key={i}
-                          className="text-xs px-2.5 py-0.5 rounded-full bg-[#FAF8E7] text-[#122B28] border border-[#E5DEAA]"
+                          className="group/tag inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full bg-[#FAF8E7] text-[#122B28] border border-[#E5DEAA] hover:border-[#81D8CF] transition-colors"
                         >
-                          {item}
+                          <span>{item}</span>
+                          {onRemoveRecommendedItem && (
+                            <button
+                              id={`btn-remove-stop-${index}-item-${i}`}
+                              type="button"
+                              onClick={() => onRemoveRecommendedItem(index, i)}
+                              className="text-[#78928E] hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-100/60 transition-colors cursor-pointer"
+                              title={`移除此推薦標籤「${item}」`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </span>
                       ))}
                     </div>
@@ -1232,9 +1338,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 {itinerary.localSpecialties.mustEat.map((food, i) => (
                   <span
                     key={i}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[#FAF8E7] text-[#665A15] border border-[#E5DEAA]"
+                    className="group/food inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-[#FAF8E7] text-[#665A15] border border-[#E5DEAA] hover:border-rose-300 transition-colors"
                   >
-                    {food}
+                    <span>{food}</span>
+                    {onRemoveMustEatFood && (
+                      <button
+                        id={`btn-remove-musteat-${i}`}
+                        type="button"
+                        onClick={() => onRemoveMustEatFood(food)}
+                        className="text-[#78928E] hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-100/60 transition-colors cursor-pointer"
+                        title={`自推薦名單移除「${food}」`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </span>
                 ))}
               </div>
@@ -1249,9 +1366,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 {itinerary.localSpecialties.souvenirs.map((item, i) => (
                   <span
                     key={i}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]/40"
+                    className="group/souvenir inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-[#E5FAF7] text-[#13695F] border border-[#81D8CF]/40 hover:border-rose-300 transition-colors"
                   >
-                    {item}
+                    <span>{item}</span>
+                    {onRemoveSouvenir && (
+                      <button
+                        id={`btn-remove-souvenir-${i}`}
+                        type="button"
+                        onClick={() => onRemoveSouvenir(item)}
+                        className="text-[#78928E] hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-100/60 transition-colors cursor-pointer"
+                        title={`自伴手禮清單移除「${item}」`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </span>
                 ))}
               </div>

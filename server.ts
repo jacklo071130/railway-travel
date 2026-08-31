@@ -498,6 +498,99 @@ ${currentItinerary ? `旅客目前已規劃的行程標題為「${currentItinera
   }
 });
 
+// API route: Re-optimize itinerary stops order by optimal path and business hours
+app.post('/api/optimize-itinerary', async (req, res) => {
+  try {
+    const { destinationStation, stops, preferences, travelDate, geminiApiKey } = req.body;
+    const headerKey = req.headers['x-gemini-api-key'] as string;
+    const customKey = geminiApiKey || headerKey;
+
+    if (!destinationStation || !stops || stops.length === 0) {
+      return res.status(400).json({ error: '缺少車站或行程站點資料' });
+    }
+
+    const ai = getAiClient(customKey);
+    if (!ai) {
+      return res.json({ success: false, note: 'No AI key, use client-side heuristic' });
+    }
+
+    const stopNames = stops.map((s: any) => s.placeName).join('、');
+    const prompt = `你是台灣鐵道與在地深度旅遊規劃專家。
+旅客在【${destinationStation.county}${destinationStation.name}火車站】預計進行一日遊，目前挑選了以下景點與美食店家：
+【${stopNames}】
+
+請依據以下兩大黃金原則，將這些景點與美食重新編排為最順暢、合乎真實營業時間的一日行程：
+1. 【精確營業時間與時段合理性】：
+   - 晨間/上午（09:30-11:30）：戶外自然公園、林業園區、歷史建築、老街文化。
+   - 午餐（11:30-13:30）：在地排隊正餐名店、經典小吃麵食。
+   - 午後（13:30-16:30）：甜點冰品、下午茶咖啡、文創園區、室內展示館。
+   - 傍晚/伴手禮（16:00-17:30）：名產糕餅禮盒（排在回程前夕，避免旅客整天手提重物）。
+   - 晚間夜市（17:30-20:00）：夜市小吃、當歸羊肉等夜市名攤（夜市大多 16:30-17:00 後才營業開張，嚴禁排在早上！）。
+2. 【最佳地理路徑（不走回頭路）】：
+   - 由火車站出發，依地理鄰近度順時針或環狀巡迴，依序串聯各站點，最後平順返回火車站。
+   - 詳細計算每一站出發到下一站的交通方式（步行/YouBike/公車）與移動分鐘數。
+
+請以繁體中文輸出符合 JSON 格式的完整站點陣列（包含出站與返程共 N+2 站）。`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            optimizedSummary: { type: Type.STRING, description: '路線與營業時間編排邏輯簡述' },
+            stops: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  timeSlot: { type: Type.STRING, description: '例如 09:30 - 10:45' },
+                  placeName: { type: Type.STRING },
+                  placeNameEn: { type: Type.STRING },
+                  category: { type: Type.STRING, enum: ['food', 'spot', 'culture', 'nature', 'photo', 'transport', 'shopping'] },
+                  description: { type: Type.STRING },
+                  highlight: { type: Type.STRING },
+                  durationMinutes: { type: Type.INTEGER },
+                  address: { type: Type.STRING },
+                  lat: { type: Type.NUMBER },
+                  lng: { type: Type.NUMBER },
+                  transportFromPrevious: {
+                    type: Type.OBJECT,
+                    properties: {
+                      mode: { type: Type.STRING, enum: ['walk', 'youbike', 'bus', 'train', 'taxi'] },
+                      durationText: { type: Type.STRING },
+                      details: { type: Type.STRING },
+                    },
+                    required: ['mode', 'durationText', 'details'],
+                  },
+                  recommendedItems: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  tips: { type: Type.STRING },
+                  estimatedCostNtd: { type: Type.INTEGER },
+                },
+                required: ['id', 'timeSlot', 'placeName', 'category', 'description', 'highlight', 'durationMinutes', 'address', 'lat', 'lng', 'transportFromPrevious'],
+              },
+            },
+          },
+          required: ['stops'],
+        },
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    if (parsed.stops && parsed.stops.length > 0) {
+      return res.json({ success: true, stops: parsed.stops, summary: parsed.optimizedSummary });
+    }
+    return res.json({ success: false });
+  } catch (error: any) {
+    console.error('Error optimizing itinerary via AI:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
+
 // Helpers for translating preferences into detailed expert prompts
 function getStyleDescription(style?: string): string {
   switch (style) {
