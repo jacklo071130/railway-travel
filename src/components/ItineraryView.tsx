@@ -180,11 +180,21 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   };
 
   const handleDirectExportPdf = async () => {
-    if (isExportingPdf || !pdfPrintableRef.current) return;
+    if (isExportingPdf) return;
     try {
       setIsExportingPdf(true);
       setExportSuccess(false);
-      await exportElementToPdf(pdfPrintableRef.current, itinerary);
+
+      if (pdfPrintableRef.current) {
+        await exportElementToPdf(pdfPrintableRef.current, itinerary);
+      } else {
+        // Fallback directly with DOM element query
+        const printableEl = document.getElementById('pdf-document-printable-sheet') || document.getElementById('pdf-printable-wrapper');
+        if (printableEl) {
+          await exportElementToPdf(printableEl as HTMLElement, itinerary);
+        }
+      }
+
       setExportSuccess(true);
       try {
         confetti({
@@ -199,8 +209,6 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       setTimeout(() => setExportSuccess(false), 3500);
     } catch (err) {
       console.error('Direct PDF export error:', err);
-      // Fallback to open modal if canvas direct capture fails
-      setIsPdfModalOpen(true);
     } finally {
       setIsExportingPdf(false);
     }
@@ -1434,7 +1442,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
         </div>
       </div>
 
-      {/* Hidden Offscreen Pure Printable Sheet for Direct PDF Canvas Generation */}
+      {/* Offscreen Pure Printable Sheet for Direct High-Quality PDF File Generation */}
       <div 
         id="pdf-render-offscreen-host"
         className="fixed pointer-events-none" 
@@ -1445,10 +1453,11 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
           width: '794px', 
           opacity: 1, 
           visibility: 'visible', 
-          zIndex: -9999 
+          zIndex: -99999,
+          pointerEvents: 'none'
         }}
       >
-        <div ref={pdfPrintableRef}>
+        <div ref={pdfPrintableRef} id="pdf-printable-wrapper">
           <PdfPrintableSheet
             itinerary={itinerary}
             selectedOutbound={activeOutbound}

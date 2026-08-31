@@ -102,64 +102,62 @@ export const StaticPdfRouteMap: React.FC<StaticPdfRouteMapProps> = ({
       return { x: canvasX, y: canvasY };
     };
 
-    // 1. Draw Clean Base Background
-    ctx.fillStyle = '#F4F1DE';
+    // 1. Draw Clean Scenic Cartographic Map Background
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+    bgGradient.addColorStop(0, '#F5F3E9');
+    bgGradient.addColorStop(0.5, '#ECE8D9');
+    bgGradient.addColorStop(1, '#E4DFCE');
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Topographic / Road grid aesthetic pattern
-    ctx.strokeStyle = '#E8E3C9';
+    // 2. Cartographic Grid & Topographic Contour Lines
+    ctx.save();
+    ctx.strokeStyle = 'rgba(180, 172, 148, 0.35)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < width; x += 30) {
+    ctx.setLineDash([4, 6]);
+    for (let x = 20; x < width; x += 45) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
       ctx.stroke();
     }
-    for (let y = 0; y < height; y += 30) {
+    for (let y = 20; y < height; y += 45) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
       ctx.stroke();
     }
+    ctx.restore();
 
-    // 2. Fetch and Draw Map Tiles (Carto Voyager)
-    const minPixelX = centerWorld.x - width / 2;
-    const maxPixelX = centerWorld.x + width / 2;
-    const minPixelY = centerWorld.y - height / 2;
-    const maxPixelY = centerWorld.y + height / 2;
-
-    const minTileX = Math.floor(minPixelX / 256);
-    const maxTileX = Math.floor(maxPixelX / 256);
-    const minTileY = Math.floor(minPixelY / 256);
-    const maxTileY = Math.floor(maxPixelY / 256);
-
-    const tilePromises: Promise<void>[] = [];
-
-    for (let tx = minTileX; tx <= maxTileX; tx++) {
-      for (let ty = minTileY; ty <= maxTileY; ty++) {
-        const p = new Promise<void>((resolve) => {
-          const tileImg = new Image();
-          tileImg.crossOrigin = 'anonymous';
-          // Carto Voyager tile server with high uptime and CORS support
-          const subdomains = ['a', 'b', 'c', 'd'];
-          const sub = subdomains[(tx + ty) % subdomains.length];
-          tileImg.src = `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${tx}/${ty}.png`;
-
-          tileImg.onload = () => {
-            const destX = tx * 256 - minPixelX;
-            const destY = ty * 256 - minPixelY;
-            ctx.drawImage(tileImg, destX, destY, 256, 256);
-            resolve();
-          };
-
-          tileImg.onerror = () => {
-            // Fallback gracefully without blocking
-            resolve();
-          };
-        });
-        tilePromises.push(p);
-      }
+    // Natural geographic terrain contours (Topographic aesthetic)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(15, 58, 53, 0.08)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      const cy = height * (0.2 + i * 0.22);
+      ctx.moveTo(0, cy);
+      ctx.bezierCurveTo(width * 0.25, cy - 25, width * 0.7, cy + 30, width, cy - 10);
+      ctx.stroke();
     }
+    ctx.restore();
+
+    // 3. Connective Road Network / Secondary Paths
+    const screenPoints = allPoints.map((p) => toCanvasCoord(p.lat, p.lng));
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < screenPoints.length; i++) {
+      const p1 = screenPoints[i];
+      const p2 = screenPoints[(i + 1) % screenPoints.length];
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+    ctx.restore();
 
     const drawOverlays = () => {
       // 3. Draw Connecting Route Polyline with Smooth Dash & Shadow
@@ -407,19 +405,8 @@ export const StaticPdfRouteMap: React.FC<StaticPdfRouteMapProps> = ({
       }
     };
 
-    // When all tiles finish loading or timeout after 1.2s, draw the route and pins
-    const tileTimeout = setTimeout(() => {
-      drawOverlays();
-    }, 1200);
-
-    Promise.all(tilePromises).then(() => {
-      clearTimeout(tileTimeout);
-      drawOverlays();
-    });
-
-    return () => {
-      clearTimeout(tileTimeout);
-    };
+    // Draw route, pins, and map labels immediately
+    drawOverlays();
   }, [destinationStation, stops, width, height]);
 
   return (
